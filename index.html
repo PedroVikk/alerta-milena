@@ -46,6 +46,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .card-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0;}
 .av-teal{background:#0C3846;border:2px solid var(--border2);}
 .av-blue{background:#2A7387;}
+.av-green{background:#276749;}
 .card-info{flex:1;min-width:0;}
 .card-name{font-size:.93rem;font-weight:600;}
 .card-sub{font-size:.75rem;color:var(--muted);margin-top:2px;}
@@ -55,6 +56,20 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .toggle-track.on{background:var(--accent);}
 .toggle-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;}
 .toggle-track.on .toggle-thumb{transform:translateX(18px);}
+/* DAYS */
+.days-row{display:flex;gap:5px;margin-top:6px;}
+.day-pill{width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;cursor:pointer;color:var(--muted);background:var(--bg);}
+.day-pill.on{background:var(--accent);color:#0C3846;border-color:var(--accent);}
+/* TAKEN */
+.taken-btn{border:none;border-radius:10px;padding:8px 14px;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;}
+.taken-btn.yes{background:rgba(56,161,105,.2);border:1px solid #38a169;color:#68d391;}
+.taken-btn.no{background:rgba(94,176,200,.15);border:1px solid var(--border2);color:var(--muted);}
+/* MED CARD FULL */
+.med-card{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
+.med-card.taken-done{border-color:#38a169;background:rgba(56,161,105,.08);}
+.med-top{display:flex;align-items:center;gap:12px;}
+.med-body{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+/* PILLS */
 .pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
 .pill{background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-size:.75rem;font-weight:600;cursor:pointer;color:var(--muted);}
 .pill.active{background:var(--accent);border-color:var(--accent);color:#0C3846;}
@@ -65,6 +80,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .hdot.checkin{background:#9FD3E3;}
 .hdot.missed{background:#f6ad55;}
 .hdot.med{background:var(--accent);}
+.hdot.taken{background:#68d391;}
 .h-title{font-size:.88rem;font-weight:600;}
 .h-time{font-size:.73rem;color:var(--muted);margin-top:2px;}
 .empty-state{text-align:center;color:var(--muted);padding:36px 20px;font-size:.88rem;}
@@ -117,14 +133,11 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .nd-val{font-size:1rem;font-weight:700;}
 .spinner{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block;margin-left:6px;}
-.sync-dot.error{background:var(--danger);}
 </style>
 </head>
 <body>
 <div class="toast" id="toast"></div>
 
-<!-- LOADING -->
 <div id="loading-screen" style="display:flex">
   <div class="spinner"></div>
   <div style="color:var(--muted);font-size:.9rem">Carregando...</div>
@@ -151,10 +164,9 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   <div class="setup-step" id="setup-3">
     <div style="font-size:3rem;margin-bottom:8px">👥</div>
     <div style="font-size:1.05rem;font-weight:700;margin-bottom:4px">PIN dos Convidados</div>
-    <div style="font-size:.82rem;color:var(--muted);margin-bottom:32px">Somente leitura do histórico</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:32px">Acesso para acompanhar remédios e histórico</div>
     <div class="pin-dots" id="sd3"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
     <div class="pin-keypad" id="sk3"></div>
-    <div style="font-size:.75rem;color:var(--muted);margin-top:14px">Deve ser diferente do PIN da Milena</div>
   </div>
   <div class="setup-step" id="setup-4">
     <div style="font-size:3rem;margin-bottom:8px">🔒</div>
@@ -182,7 +194,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <div class="header"><h1>🛡️ Alerta Milena</h1><div class="badge" id="contacts-badge">0 contatos</div></div>
     <div class="sos-wrap">
       <button class="sos-btn" onclick="triggerSOS()"><span class="sos-icon">🆘</span><span class="sos-label">SOS</span></button>
-      <p class="sos-hint">Pressione para enviar alerta pelo WhatsApp para todos os contatos</p>
+      <p class="sos-hint">Pressione para enviar alerta pelo WhatsApp</p>
       <div class="checkin-card" style="width:100%">
         <div class="ci-row">
           <div><div class="ci-label">Próximo check-in</div><div class="timer" id="checkin-timer">6:00:00</div></div>
@@ -196,16 +208,16 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   <!-- REMÉDIOS -->
   <div class="screen" id="screen-meds">
     <div class="header"><h1>💊 Remédios</h1></div>
-    <div class="notif-banner" id="notif-banner">
-      <b>🔔 Ativar notificações</b><br>Para receber alertas de remédios toque abaixo. No iPhone, o app precisa estar na tela inicial.
+    <div class="notif-banner" id="notif-banner" style="display:none">
+      <b>🔔 Ativar notificações</b><br>Para receber alertas de remédios toque abaixo.
       <br><br><button class="btn-primary" style="padding:10px" onclick="reqNotif()">Ativar notificações</button>
     </div>
     <div id="next-dose-wrap" style="display:none">
       <div class="next-dose"><div style="font-size:2rem">💊</div><div><div class="nd-label">Próximo remédio</div><div class="nd-val" id="next-dose-val">—</div></div></div>
     </div>
-    <p class="section-title">Meus remédios</p>
-    <div class="card-list" id="med-list"></div>
-    <button class="btn-primary" onclick="showAddMed()">+ Adicionar remédio</button>
+    <p class="section-title">Remédios de hoje</p>
+    <div id="med-list"></div>
+    <div id="add-med-btn-wrap"><button class="btn-primary" onclick="showAddMed()">+ Adicionar remédio</button></div>
   </div>
 
   <!-- CONTACTS -->
@@ -262,20 +274,28 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="modal-overlay" id="modal-med">
   <div class="modal">
     <div class="modal-title">Novo remédio</div>
-    <div class="modal-sub">Configure nome, horário e repetição</div>
+    <div class="modal-sub">Configure nome, horário, dias e repetição</div>
     <div class="form-group"><label class="form-label">Nome do remédio</label><input class="form-input" id="med-name" placeholder="Ex: Depakote 250mg" type="text"/></div>
-    <div class="form-group"><label class="form-label">Primeiro horário</label><input class="form-input" id="med-time" type="time"/></div>
+    <div class="form-group"><label class="form-label">Horário</label><input class="form-input" id="med-time" type="time"/></div>
+    <div class="form-group">
+      <label class="form-label">Dias da semana</label>
+      <div class="days-row" id="days-picker">
+        <div class="day-pill on" data-d="0">Dom</div>
+        <div class="day-pill on" data-d="1">Seg</div>
+        <div class="day-pill on" data-d="2">Ter</div>
+        <div class="day-pill on" data-d="3">Qua</div>
+        <div class="day-pill on" data-d="4">Qui</div>
+        <div class="day-pill on" data-d="5">Sex</div>
+        <div class="day-pill on" data-d="6">Sáb</div>
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label">Repetir a cada</label>
       <div class="pills" id="repeat-pills">
-        <div class="pill" data-h="1" onclick="selPill(this)">1h</div>
-        <div class="pill" data-h="2" onclick="selPill(this)">2h</div>
-        <div class="pill" data-h="3" onclick="selPill(this)">3h</div>
-        <div class="pill" data-h="4" onclick="selPill(this)">4h</div>
-        <div class="pill active" data-h="6" onclick="selPill(this)">6h</div>
-        <div class="pill" data-h="8" onclick="selPill(this)">8h</div>
-        <div class="pill" data-h="12" onclick="selPill(this)">12h</div>
-        <div class="pill" data-h="24" onclick="selPill(this)">24h</div>
+        <div class="pill" data-h="1">1h</div><div class="pill" data-h="2">2h</div>
+        <div class="pill" data-h="3">3h</div><div class="pill" data-h="4">4h</div>
+        <div class="pill active" data-h="6">6h</div><div class="pill" data-h="8">8h</div>
+        <div class="pill" data-h="12">12h</div><div class="pill" data-h="24">Dose única</div>
       </div>
     </div>
     <div class="form-group"><label class="form-label">Observação (opcional)</label><input class="form-input" id="med-note" placeholder="Ex: Tomar com água" type="text"/></div>
@@ -301,7 +321,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   <div class="modal">
     <div class="confirm-big">🆘</div>
     <div class="modal-title" style="text-align:center">Enviando alerta!</div>
-    <div class="modal-sub" style="text-align:center" id="sos-sub">Selecione para quem enviar:</div>
+    <div class="modal-sub" style="text-align:center">Toque no contato ou envie para todos:</div>
     <div id="sos-contact-list" style="display:flex;flex-direction:column;gap:10px;margin:16px 0"></div>
     <div class="countdown-bar"><div class="countdown-fill" id="countdown-fill" style="width:100%"></div></div>
     <button class="btn-secondary" onclick="cancelSOS()">❌ Cancelar (foi engano)</button>
@@ -322,16 +342,15 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 </div>
 
 <script>
-// ── API (chama Vercel Functions — chave fica no servidor) ──
-async function apiFetch(path, method='GET', body=null){
+// ── API ───────────────────────────────────────────────
+async function apiFetch(path,method='GET',body=null){
   const opts={method,headers:{'Content-Type':'application/json'}};
   if(body)opts.body=JSON.stringify(body);
   const r=await fetch('/api/'+path,opts);
-  if(!r.ok){const e=await r.text();throw new Error(e);}
   const t=await r.text();
+  if(!r.ok)throw new Error(t||'Erro '+r.status);
   return t?JSON.parse(t):null;
 }
-
 const db={
   async getSettings(){const r=await apiFetch('settings');return r&&r[0]||null;},
   async saveSettings(d){return apiFetch('settings','PATCH',d);},
@@ -352,15 +371,16 @@ async function hp(p){
   return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 
-// ── STATE (in-memory cache) ───────────────────────────
+// ── STATE ─────────────────────────────────────────────
 let S={pinMilena:null,pinGuest:null,msgTemplate:'🆘 EMERGÊNCIA: Milena está passando mal e precisa de ajuda! Por favor entre em contato ou vá até ela.',checkinDeadline:Date.now()+6*3600*1000};
 let contacts=[],meds=[],role=null,sosTimer=null,ciInterval=null,medInterval=null;
+
+const DAY_NAMES=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
 // ── LAYERS ────────────────────────────────────────────
 function showLayer(id){
   ['loading-screen','setup-screen','pin-screen','app'].forEach(x=>{
-    const el=document.getElementById(x);
-    el.style.display=x===id?'flex':'none';
+    document.getElementById(x).style.display=x===id?'flex':'none';
   });
 }
 
@@ -378,9 +398,8 @@ async function init(){
     if(!S.pinMilena||!S.pinGuest)initSetup();
     else initPin();
   }catch(e){
-    toast('⚠️ Erro ao conectar ao banco. Verifique a conexão.');
     console.error(e);
-    // fallback to local
+    toast('⚠️ Erro ao conectar: '+e.message);
     if(!S.pinMilena||!S.pinGuest)initSetup();
     else initPin();
   }
@@ -454,7 +473,7 @@ async function enterApp(){
   }catch(e){contacts=[];meds=[];toast('⚠️ Erro ao carregar dados');}
   showLayer('app');
   applyRole();
-  goTo(role==='guest'?'history':'home');
+  goTo(role==='guest'?'meds':'home');
   startCI();startMedLoop();
   document.getElementById('msg-template').value=S.msgTemplate;
   renderContacts();renderMeds();
@@ -468,7 +487,9 @@ function applyRole(){
   document.getElementById('settings-locked').style.display=g?'block':'none';
   document.getElementById('settings-content').style.display=g?'none':'block';
   document.getElementById('nav-home').style.display=g?'none':'flex';
-  document.getElementById('nav-meds').style.display=g?'none':'flex';
+  // guests can see meds (read only) but not add
+  if(g&&document.getElementById('add-med-btn-wrap'))
+    document.getElementById('add-med-btn-wrap').style.display='none';
   document.getElementById('role-chip-history').innerHTML=g?'<span class="role-chip guest">Convidado</span>':'<span class="role-chip milena">Milena</span>';
 }
 
@@ -502,9 +523,7 @@ function renderContacts(){
     :'<div class="empty-state">Nenhum contato cadastrado.</div>';
   document.getElementById('contacts-badge').textContent=contacts.length+(contacts.length===1?' contato':' contatos');
 }
-
 function showAddContact(){document.getElementById('input-name').value='';document.getElementById('input-phone').value='';openModal('modal-add');}
-
 async function saveContact(){
   const n=document.getElementById('input-name').value.trim();
   const p=document.getElementById('input-phone').value.replace(/\D/g,'');
@@ -512,56 +531,38 @@ async function saveContact(){
   const btn=document.getElementById('btn-save-contact');btn.disabled=true;btn.textContent='Salvando...';
   try{
     const r=await db.addContact({name:n,phone:p});
-    if(r&&r[0]){contacts.push(r[0]);renderContacts();closeModal('modal-add');toast('✅ Contato salvo!');}
-    else{toast('⚠️ Resposta inesperada do banco');console.error('Resposta:',r);}
-  }catch(e){
-    const msg=e.message||'Erro desconhecido';
-    toast('⚠️ '+msg.substring(0,60));
-    console.error('Erro completo ao salvar contato:',e);
-    alert('Erro ao salvar contato:\n'+msg);
-  }
+    const added=Array.isArray(r)?r[0]:r;
+    contacts.push(added);renderContacts();closeModal('modal-add');toast('✅ Contato salvo!');
+  }catch(e){toast('⚠️ '+e.message);console.error(e);}
   btn.disabled=false;btn.textContent='Salvar';
 }
-
 async function delContact(id,name){
   if(!confirm('Remover '+name+'?'))return;
-  try{
-    await db.delContact(id);
-    contacts=contacts.filter(c=>c.id!==id);renderContacts();toast('🗑 Contato removido');
-  }catch(e){toast('⚠️ Erro ao remover contato');}
+  try{await db.delContact(id);contacts=contacts.filter(c=>c.id!==id);renderContacts();toast('🗑 Contato removido');}
+  catch(e){toast('⚠️ Erro ao remover: '+e.message);}
 }
 
 // ── SOS ───────────────────────────────────────────────
 function triggerSOS(){
   if(!contacts.length){toast('⚠️ Cadastre ao menos um contato!');goTo('contacts');return;}
-  // build contact buttons
   const list=document.getElementById('sos-contact-list');
   list.innerHTML=contacts.map(c=>`
     <button onclick="sendWAContact('${c.id}')" style="background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;color:var(--text);font-size:.95rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;text-align:left">
       <span style="font-size:1.4rem">📲</span>
-      <div>
-        <div style="font-weight:700">${c.name}</div>
-        <div style="font-size:.75rem;color:var(--muted)">+${c.phone}</div>
-      </div>
+      <div><div style="font-weight:700">${c.name}</div><div style="font-size:.75rem;color:var(--muted)">+${c.phone}</div></div>
     </button>`).join('');
-  // add send all button
-  list.innerHTML+=`<button onclick="sendWAAll()" style="background:var(--danger);border:none;border-radius:12px;padding:14px 16px;color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;width:100%">🆘 Enviar para TODOS</button>`;
+  list.innerHTML+=`<button onclick="sendWAAll()" style="background:var(--danger);border:none;border-radius:12px;padding:14px;color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;width:100%;margin-top:4px">🆘 Enviar para TODOS</button>`;
   openModal('modal-sos');
-  // auto countdown 10s
   let pct=100;const fill=document.getElementById('countdown-fill');
   sosTimer=setInterval(()=>{pct-=1;fill.style.width=pct+'%';if(pct<=0){clearInterval(sosTimer);sosTimer=null;sendWAAll();}},100);
 }
-
 function cancelSOS(){if(sosTimer){clearInterval(sosTimer);sosTimer=null;}closeModal('modal-sos');toast('Alerta cancelado');}
-
 function sendWAContact(id){
   const c=contacts.find(x=>x.id===id);if(!c)return;
-  const msg=encodeURIComponent(S.msgTemplate);
-  window.open('https://wa.me/'+c.phone+'?text='+msg,'_blank');
+  window.open('https://wa.me/'+c.phone+'?text='+encodeURIComponent(S.msgTemplate),'_blank');
   addHistoryDB('sos','🆘 SOS enviado para: '+c.name);
   toast('🆘 Mensagem aberta para '+c.name+'!');
 }
-
 function sendWAAll(){
   if(sosTimer){clearInterval(sosTimer);sosTimer=null;}
   closeModal('modal-sos');
@@ -570,13 +571,13 @@ function sendWAAll(){
   addHistoryDB('sos','🆘 SOS disparado para: '+contacts.map(c=>c.name).join(', '));
   toast('🆘 Alertas enviados para '+contacts.length+' contato(s)!');
   S.checkinDeadline=Date.now()+6*3600*1000;
-  db.saveSettings({checkin_deadline:S.checkinDeadline}).catch(e=>console.error(e));
+  db.saveSettings({checkin_deadline:S.checkinDeadline}).catch(console.error);
 }
 
 // ── CHECK-IN ──────────────────────────────────────────
 function doCheckin(){
   S.checkinDeadline=Date.now()+6*3600*1000;
-  db.saveSettings({checkin_deadline:S.checkinDeadline}).catch(e=>console.error(e));
+  db.saveSettings({checkin_deadline:S.checkinDeadline}).catch(console.error);
   addHistoryDB('checkin','✅ Check-in realizado — Milena está bem');
   toast('✅ Check-in registrado!');
 }
@@ -591,9 +592,9 @@ function startCI(){
       if(!sessionStorage.getItem(k)){
         sessionStorage.setItem(k,'1');
         addHistoryDB('missed','⚠️ Check-in perdido — alerta automático disparado');
-        if(contacts.length)sendWA();
+        if(contacts.length)sendWAAll();
         S.checkinDeadline=Date.now()+6*3600*1000;
-        db.saveSettings({checkin_deadline:S.checkinDeadline}).catch(e=>console.error(e));
+        db.saveSettings({checkin_deadline:S.checkinDeadline}).catch(console.error);
       }
     }else{
       el.classList.remove('urgent');
@@ -603,13 +604,31 @@ function startCI(){
   },1000);
 }
 
+// ── DAYS PICKER ───────────────────────────────────────
+document.querySelectorAll('#days-picker .day-pill').forEach(p=>{
+  p.onclick=()=>p.classList.toggle('on');
+});
+function getSelectedDays(){
+  return Array.from(document.querySelectorAll('#days-picker .day-pill')).map(p=>p.classList.contains('on')?'1':'0').join('');
+}
+function daysLabel(str){
+  if(!str||str==='1111111')return 'Todos os dias';
+  if(str==='0111110')return 'Dias úteis';
+  if(str==='1000001')return 'Fins de semana';
+  const names=[];
+  [...str].forEach((c,i)=>{if(c==='1')names.push(DAY_NAMES[i]);});
+  return names.join(', ');
+}
+
 // ── MEDS ─────────────────────────────────────────────
 function selPill(el){document.querySelectorAll('#repeat-pills .pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');}
+document.querySelectorAll('#repeat-pills .pill').forEach(p=>p.onclick=()=>selPill(p));
 
 function showAddMed(){
   document.getElementById('med-name').value='';document.getElementById('med-note').value='';
   const now=new Date();
   document.getElementById('med-time').value=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  document.querySelectorAll('#days-picker .day-pill').forEach(p=>p.classList.add('on'));
   document.querySelectorAll('#repeat-pills .pill').forEach(p=>p.classList.remove('active'));
   document.querySelector('#repeat-pills .pill[data-h="6"]').classList.add('active');
   openModal('modal-med');
@@ -620,6 +639,7 @@ async function saveMed(){
   const time=document.getElementById('med-time').value;
   const note=document.getElementById('med-note').value.trim();
   const ap=document.querySelector('#repeat-pills .pill.active');
+  const days=getSelectedDays();
   if(!name||!time){toast('⚠️ Preencha nome e horário');return;}
   const iH=ap?parseInt(ap.dataset.h):6;
   const [hh,mm]=time.split(':').map(Number);
@@ -627,46 +647,79 @@ async function saveMed(){
   if(next.getTime()<=Date.now())next.setDate(next.getDate()+1);
   const btn=document.getElementById('btn-save-med');btn.disabled=true;btn.textContent='Salvando...';
   try{
-    const r=await db.addMed({name,time,note,interval_h:iH,next_dose:next.getTime(),active:true});
-    meds.push(r[0]);renderMeds();updateNextDose();closeModal('modal-med');toast('✅ Remédio salvo!');scheduleMedNotifs();
-  }catch(e){toast('⚠️ Erro ao salvar remédio');console.error(e);}
+    const r=await db.addMed({name,time,note,interval_h:iH,next_dose:next.getTime(),active:true,days_of_week:days,taken_today:false,taken_at:null,taken_log:[]});
+    const added=Array.isArray(r)?r[0]:r;
+    meds.push(added);renderMeds();updateNextDose();closeModal('modal-med');toast('✅ Remédio salvo!');
+  }catch(e){toast('⚠️ '+e.message);console.error(e);}
   btn.disabled=false;btn.textContent='Salvar remédio';
 }
 
 function renderMeds(){
   const l=document.getElementById('med-list');
   if(!meds.length){l.innerHTML='<div class="empty-state">Nenhum remédio cadastrado ainda.</div>';return;}
-  l.innerHTML=meds.map(m=>`
-    <div class="card-item">
-      <div class="card-avatar av-blue">💊</div>
-      <div class="card-info">
-        <div class="card-name">${m.name}</div>
-        <div class="card-sub">Início: ${m.time} · a cada ${m.interval_h}h${m.note?' · '+m.note:''}</div>
+  const todayIdx=new Date().getDay(); // 0=Dom
+  const todayMeds=meds.filter(m=>{
+    const days=m.days_of_week||'1111111';
+    return days[todayIdx]==='1';
+  });
+  if(!todayMeds.length){l.innerHTML='<div class="empty-state">Nenhum remédio para hoje 🎉</div>';return;}
+  l.innerHTML=todayMeds.map(m=>{
+    const taken=m.taken_today;
+    const canToggle=role==='milena';
+    return `<div class="med-card ${taken?'taken-done':''}">
+      <div class="med-top">
+        <div class="card-avatar av-blue" style="flex-shrink:0">💊</div>
+        <div class="card-info">
+          <div class="card-name">${m.name}</div>
+          <div class="card-sub">🕐 ${m.time} · a cada ${m.interval_h}h · ${daysLabel(m.days_of_week)}${m.note?' · '+m.note:''}</div>
+        </div>
+        ${role==='milena'?`<button class="card-del" onclick="delMed('${m.id}','${m.name}')">🗑</button>`:''}
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-        <div class="toggle-track ${m.active?'on':''}" onclick="toggleMed('${m.id}')"><div class="toggle-thumb"></div></div>
-        <button class="card-del" onclick="delMed('${m.id}','${m.name}')">🗑</button>
+      <div class="med-body" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div>
+          ${taken
+            ?`<div style="color:#68d391;font-size:.82rem;font-weight:700">✅ Tomado${m.taken_at?' às '+m.taken_at:''}</div>`
+            :`<div style="color:var(--muted);font-size:.82rem">⏳ Ainda não tomado</div>`
+          }
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          ${canToggle
+            ?`<button class="taken-btn ${taken?'yes':'no'}" onclick="toggleTaken('${m.id}')">${taken?'✅ Tomado':'Marcar como tomado'}</button>`
+            :`<span style="font-size:.78rem;color:${taken?'#68d391':'var(--muted)'};">${taken?'✅ Tomado':'⏳ Pendente'}</span>`
+          }
+          ${role==='milena'?`<div class="toggle-track ${m.active?'on':''}" onclick="toggleMedActive('${m.id}')"><div class="toggle-thumb"></div></div>`:''}
+        </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
-async function toggleMed(id){
+async function toggleTaken(id){
   const m=meds.find(x=>x.id===id);if(!m)return;
-  m.active=!m.active;
-  renderMeds();updateNextDose();
-  try{await db.updateMed(id,{active:m.active});}catch(e){m.active=!m.active;renderMeds();toast('⚠️ Erro ao atualizar');}
+  m.taken_today=!m.taken_today;
+  m.taken_at=m.taken_today?new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):null;
+  renderMeds();
+  try{
+    await db.updateMed(id,{taken_today:m.taken_today,taken_at:m.taken_at});
+    if(m.taken_today)addHistoryDB('taken','✅ Remédio tomado: '+m.name+' às '+m.taken_at);
+  }catch(e){m.taken_today=!m.taken_today;renderMeds();toast('⚠️ Erro ao salvar');}
+}
+
+async function toggleMedActive(id){
+  const m=meds.find(x=>x.id===id);if(!m)return;
+  m.active=!m.active;renderMeds();
+  try{await db.updateMed(id,{active:m.active});}
+  catch(e){m.active=!m.active;renderMeds();toast('⚠️ Erro ao atualizar');}
 }
 
 async function delMed(id,name){
   if(!confirm('Remover '+name+'?'))return;
-  try{
-    await db.delMed(id);
-    meds=meds.filter(m=>m.id!==id);renderMeds();updateNextDose();toast('🗑 Remédio removido');
-  }catch(e){toast('⚠️ Erro ao remover remédio');console.error(e);}
+  try{await db.delMed(id);meds=meds.filter(m=>m.id!==id);renderMeds();updateNextDose();toast('🗑 Remédio removido');}
+  catch(e){toast('⚠️ Erro ao remover: '+e.message);}
 }
 
 function updateNextDose(){
-  const active=meds.filter(m=>m.active);
+  const active=meds.filter(m=>m.active&&!m.taken_today);
   const wrap=document.getElementById('next-dose-wrap');
   if(!active.length){wrap.style.display='none';return;}
   const next=active.reduce((a,b)=>(a.next_dose||0)<(b.next_dose||0)?a:b);
@@ -679,13 +732,20 @@ function updateNextDose(){
 
 function startMedLoop(){
   if(medInterval)clearInterval(medInterval);
+  // Reset taken_today at midnight
+  const now=new Date();
+  const msToMidnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)-now;
+  setTimeout(()=>{
+    meds.forEach(m=>{m.taken_today=false;m.taken_at=null;db.updateMed(m.id,{taken_today:false,taken_at:null}).catch(console.error);});
+    renderMeds();
+  },msToMidnight);
   medInterval=setInterval(async()=>{
-    const now=Date.now();let changed=false;
+    const nowTs=Date.now();let changed=false;
     for(const m of meds){
       if(!m.active)continue;
-      if(now>=(m.next_dose||0)){
+      if(nowTs>=(m.next_dose||0)){
         fireInAppMed(m);
-        m.next_dose=now+m.interval_h*3600*1000;
+        m.next_dose=nowTs+m.interval_h*3600*1000;
         try{await db.updateMed(m.id,{next_dose:m.next_dose});}catch(e){}
         changed=true;
       }
@@ -704,31 +764,15 @@ function fireInAppMed(m){
   addHistoryDB('med','💊 Lembrete: '+m.name+(m.note?' ('+m.note+')':''));
 }
 
-function scheduleMedNotifs(){
-  const now=Date.now();
-  meds.filter(m=>m.active).forEach(m=>{
-    const diff=(m.next_dose||0)-now;
-    if(diff>0&&diff<=3600*1000){
-      setTimeout(()=>{
-        if(Notification.permission==='granted'){
-          try{new Notification('💊 Hora do remédio!',{body:m.name+(m.note?' — '+m.note:''),tag:'med_'+m.id,requireInteraction:true});}catch(e){}
-        }
-        if(navigator.vibrate)navigator.vibrate([300,100,300,100,300]);
-      },diff);
-    }
-  });
-}
-
 // ── NOTIFICATIONS ─────────────────────────────────────
 function checkNotifBanner(){
-  if(!('Notification' in window)||Notification.permission==='granted')
-    document.getElementById('notif-banner').style.display='none';
+  const b=document.getElementById('notif-banner');
+  if('Notification' in window&&Notification.permission!=='granted')b.style.display='block';
 }
 async function reqNotif(){
-  if(!('Notification' in window)){toast('⚠️ Navegador não suporta notificações');return;}
   const p=await Notification.requestPermission();
-  if(p==='granted'){document.getElementById('notif-banner').style.display='none';toast('✅ Notificações ativadas!');scheduleMedNotifs();}
-  else toast('⚠️ Permissão negada. Habilite nas configurações do iPhone.');
+  if(p==='granted'){document.getElementById('notif-banner').style.display='none';toast('✅ Notificações ativadas!');}
+  else toast('⚠️ Permissão negada.');
 }
 
 // ── HISTORY ───────────────────────────────────────────
@@ -743,14 +787,14 @@ async function renderHistory(){
     l.innerHTML=h.length
       ?h.map(x=>`<div class="history-item"><div class="hdot ${x.type}"></div><div><div class="h-title">${x.text}</div><div class="h-time">${x.time}</div></div></div>`).join('')
       :'<div class="empty-state">Nenhum evento registrado ainda.</div>';
-  }catch(e){l.innerHTML='<div class="empty-state">Erro ao carregar histórico.</div>';}
+  }catch(e){l.innerHTML='<div class="empty-state">Erro ao carregar.</div>';}
 }
 
 // ── SETTINGS ─────────────────────────────────────────
 async function saveMsg(){
   S.msgTemplate=document.getElementById('msg-template').value.trim()||S.msgTemplate;
   try{await db.saveSettings({msg_template:S.msgTemplate});toast('✅ Mensagem salva!');}
-  catch(e){toast('⚠️ Erro ao salvar mensagem');}
+  catch(e){toast('⚠️ Erro ao salvar');}
 }
 
 // ── CHANGE PINS ───────────────────────────────────────
@@ -776,7 +820,6 @@ function eCPErr(){shake('cpd');uDots('cpd',cpVal,true);toast('⚠️ PIN incorre
 function openModal(id){document.getElementById(id).classList.add('active');}
 function closeModal(id){document.getElementById(id).classList.remove('active');}
 
-// ── START ──────────────────────────────────────────────
 init();
 </script>
 </body>
