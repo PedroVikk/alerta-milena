@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Alerta Milena"/>
+<meta name="theme-color" content="#0C3846"/>
+<title>Alerta Milena</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0C3846;--bg2:#0e4255;--bg3:#2A7387;--border:#2A7387;--border2:#5EB0C8;
+  --text:#E4F4F8;--muted:#9FD3E3;--danger:#e05c6a;--danger2:#c0404e;
+  --ok:#38a169;--accent:#5EB0C8;--accent2:#2A7387;--nav-h:72px;
+}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+#setup-screen,#pin-screen,#loading-screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;background:var(--bg);overflow-y:auto;z-index:50;}
+#app{position:fixed;inset:0;display:none;}
+.screen{display:none;position:absolute;top:0;left:0;right:0;bottom:var(--nav-h);overflow-y:auto;padding:24px 20px 20px;-webkit-overflow-scrolling:touch;}
+.screen.active{display:block;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.header h1{font-size:1.25rem;font-weight:700;}
+.badge{background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:.75rem;color:var(--text);}
+.sos-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 0 16px;}
+.sos-btn{width:180px;height:180px;border-radius:50%;border:4px solid var(--danger);background:radial-gradient(circle at 40% 40%,#ff8a94,var(--danger2));cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;user-select:none;animation:pulse 2s infinite;}
+.sos-btn:active{transform:scale(.93);}
+.sos-icon{font-size:2.8rem;}.sos-label{font-size:1rem;font-weight:800;letter-spacing:2px;color:#fff;}
+@keyframes pulse{0%,100%{box-shadow:0 0 60px rgba(224,92,106,.4),0 0 0 0 rgba(224,92,106,.3);}50%{box-shadow:0 0 80px rgba(224,92,106,.6),0 0 0 20px rgba(224,92,106,0);}}
+.sos-hint{font-size:.78rem;color:var(--muted);text-align:center;max-width:210px;}
+.checkin-card{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:16px;margin-top:6px;}
+.ci-row{display:flex;align-items:center;justify-content:space-between;}
+.ci-label{font-size:.82rem;color:var(--muted);}
+.timer{font-size:1.35rem;font-weight:700;font-variant-numeric:tabular-nums;}
+.timer.urgent{color:var(--danger);}
+.btn-checkin{background:var(--accent);border:none;color:#0C3846;font-size:.85rem;font-weight:800;border-radius:10px;padding:10px;cursor:pointer;margin-top:10px;width:100%;}
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;height:var(--nav-h);background:var(--bg2);border-top:1px solid var(--border2);display:flex;align-items:flex-start;padding-top:8px;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:.6rem;font-weight:600;cursor:pointer;}
+.nav-btn.active{color:var(--accent);}
+.nav-btn .icon{font-size:1.3rem;}
+.section-title{font-size:.72rem;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+.card-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.card-item{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;}
+.card-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0;}
+.av-teal{background:#0C3846;border:2px solid var(--border2);}
+.av-blue{background:#2A7387;}
+.card-info{flex:1;min-width:0;}
+.card-name{font-size:.93rem;font-weight:600;}
+.card-sub{font-size:.75rem;color:var(--muted);margin-top:2px;}
+.card-del{background:rgba(224,92,106,.15);border:1px solid rgba(224,92,106,.5);color:var(--danger);font-size:.78rem;font-weight:700;border-radius:8px;cursor:pointer;padding:6px 10px;white-space:nowrap;}
+.card-del:active{background:rgba(224,92,106,.35);}
+.toggle-track{width:44px;height:26px;border-radius:13px;background:var(--border);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.toggle-track.on{background:var(--accent);}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;}
+.toggle-track.on .toggle-thumb{transform:translateX(18px);}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.pill{background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-size:.75rem;font-weight:600;cursor:pointer;color:var(--muted);}
+.pill.active{background:var(--accent);border-color:var(--accent);color:#0C3846;}
+.history-list{display:flex;flex-direction:column;gap:10px;}
+.history-item{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;}
+.hdot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.hdot.sos{background:var(--danger);}
+.hdot.checkin{background:#9FD3E3;}
+.hdot.missed{background:#f6ad55;}
+.hdot.med{background:var(--accent);}
+.h-title{font-size:.88rem;font-weight:600;}
+.h-time{font-size:.73rem;color:var(--muted);margin-top:2px;}
+.empty-state{text-align:center;color:var(--muted);padding:36px 20px;font-size:.88rem;}
+.settings-card{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;margin-bottom:14px;overflow:hidden;}
+.s-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);}
+.s-row:last-child{border-bottom:none;}
+.s-label{font-size:.88rem;font-weight:500;}
+.form-group{margin-bottom:12px;}
+.form-label{font-size:.76rem;color:var(--muted);font-weight:600;margin-bottom:5px;display:block;}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:11px 14px;color:var(--text);font-size:.93rem;outline:none;}
+.form-input:focus{border-color:#9FD3E3;}
+.btn-primary{width:100%;background:var(--accent);border:none;color:#0C3846;font-size:.93rem;font-weight:800;border-radius:12px;padding:13px;cursor:pointer;margin-top:4px;}
+.btn-primary:active{background:#9FD3E3;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-secondary{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:.88rem;font-weight:600;border-radius:12px;padding:11px;cursor:pointer;margin-top:8px;}
+.btn-danger{width:100%;background:var(--danger);border:none;color:#fff;font-size:.88rem;font-weight:700;border-radius:12px;padding:11px;cursor:pointer;margin-top:8px;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(4px);}
+.modal-overlay.active{display:flex;}
+.modal{background:var(--bg2);border-radius:24px 24px 0 0;padding:22px 20px 44px;width:100%;max-width:500px;border-top:2px solid var(--border2);max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:1.05rem;font-weight:700;margin-bottom:5px;}
+.modal-sub{font-size:.82rem;color:var(--muted);margin-bottom:18px;}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-100px);background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:11px 20px;font-size:.83rem;font-weight:600;transition:transform .3s;z-index:400;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.confirm-big{font-size:3rem;text-align:center;margin-bottom:10px;}
+.countdown-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:10px 0;}
+.countdown-fill{height:100%;background:var(--danger);border-radius:2px;transition:width .1s linear;}
+.pin-logo{font-size:3rem;margin-bottom:8px;}
+.pin-title{font-size:1.25rem;font-weight:700;margin-bottom:4px;}
+.pin-sub{font-size:.83rem;color:var(--muted);margin-bottom:32px;text-align:center;}
+.pin-dots{display:flex;gap:16px;margin-bottom:28px;}
+.pin-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--muted);background:transparent;transition:all .15s;}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent);}
+.pin-dot.error{background:var(--danger);border-color:var(--danger);}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:280px;}
+.pin-key{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:16px;font-size:1.25rem;font-weight:600;cursor:pointer;text-align:center;color:var(--text);}
+.pin-key:active{background:var(--accent);color:#0C3846;}
+.pin-key.del{font-size:.95rem;color:var(--muted);}
+.pin-key.empty{background:transparent;border:none;cursor:default;}
+.pin-shake{animation:shake .4s;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-8px);}40%,80%{transform:translateX(8px);}}
+.setup-step{display:none;width:100%;max-width:300px;flex-direction:column;align-items:center;text-align:center;}
+.setup-step.active{display:flex;}
+.role-chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;margin-left:6px;}
+.role-chip.milena{background:#2A7387;color:#E4F4F8;}
+.role-chip.guest{background:#0C3846;border:1px solid var(--border2);color:#9FD3E3;}
+.notif-banner{background:rgba(42,115,135,.2);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;margin-bottom:18px;font-size:.82rem;color:var(--muted);line-height:1.6;}
+.notif-banner b{color:var(--text);}
+.next-dose{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+.nd-label{font-size:.75rem;color:var(--muted);}
+.nd-val{font-size:1rem;font-weight:700;}
+.spinner{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block;margin-left:6px;}
+.sync-dot.error{background:var(--danger);}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- LOADING -->
+<div id="loading-screen" style="display:flex">
+  <div class="spinner"></div>
+  <div style="color:var(--muted);font-size:.9rem">Carregando...</div>
+</div>
+
+<!-- SETUP -->
+<div id="setup-screen">
+  <div class="setup-step active" id="setup-1">
+    <div style="font-size:3rem;margin-bottom:8px">🛡️</div>
+    <div style="font-size:1.2rem;font-weight:700;margin-bottom:4px">Bem-vinda, Milena!</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:32px">Primeiro acesso — configure seus PINs.</div>
+    <div style="font-size:.88rem;font-weight:600;margin-bottom:18px">PIN da <span class="role-chip milena">Milena</span></div>
+    <div class="pin-dots" id="sd1"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
+    <div class="pin-keypad" id="sk1"></div>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:14px">Acesso completo ao app</div>
+  </div>
+  <div class="setup-step" id="setup-2">
+    <div style="font-size:3rem;margin-bottom:8px">🔒</div>
+    <div style="font-size:1.05rem;font-weight:700;margin-bottom:4px">Confirme o PIN da Milena</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:32px">Digite novamente</div>
+    <div class="pin-dots" id="sd2"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
+    <div class="pin-keypad" id="sk2"></div>
+  </div>
+  <div class="setup-step" id="setup-3">
+    <div style="font-size:3rem;margin-bottom:8px">👥</div>
+    <div style="font-size:1.05rem;font-weight:700;margin-bottom:4px">PIN dos Convidados</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:32px">Somente leitura do histórico</div>
+    <div class="pin-dots" id="sd3"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
+    <div class="pin-keypad" id="sk3"></div>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:14px">Deve ser diferente do PIN da Milena</div>
+  </div>
+  <div class="setup-step" id="setup-4">
+    <div style="font-size:3rem;margin-bottom:8px">🔒</div>
+    <div style="font-size:1.05rem;font-weight:700;margin-bottom:4px">Confirme o PIN dos Convidados</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:32px">Digite novamente</div>
+    <div class="pin-dots" id="sd4"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
+    <div class="pin-keypad" id="sk4"></div>
+  </div>
+</div>
+
+<!-- PIN -->
+<div id="pin-screen">
+  <div class="pin-logo">🛡️</div>
+  <div class="pin-title">Alerta Milena</div>
+  <div class="pin-sub">Digite seu PIN para entrar</div>
+  <div class="pin-dots" id="pin-dots"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
+  <div class="pin-keypad" id="pin-keypad"></div>
+  <div style="font-size:.73rem;color:var(--muted);margin-top:16px;text-align:center">PIN da Milena ou PIN de convidado</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="header"><h1>🛡️ Alerta Milena</h1><div class="badge" id="contacts-badge">0 contatos</div></div>
+    <div class="sos-wrap">
+      <button class="sos-btn" onclick="triggerSOS()"><span class="sos-icon">🆘</span><span class="sos-label">SOS</span></button>
+      <p class="sos-hint">Pressione para enviar alerta pelo WhatsApp para todos os contatos</p>
+      <div class="checkin-card" style="width:100%">
+        <div class="ci-row">
+          <div><div class="ci-label">Próximo check-in</div><div class="timer" id="checkin-timer">6:00:00</div></div>
+          <div style="font-size:2rem">⏱️</div>
+        </div>
+        <button class="btn-checkin" onclick="doCheckin()">✅ Estou bem!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMÉDIOS -->
+  <div class="screen" id="screen-meds">
+    <div class="header"><h1>💊 Remédios</h1></div>
+    <div class="notif-banner" id="notif-banner">
+      <b>🔔 Ativar notificações</b><br>Para receber alertas de remédios toque abaixo. No iPhone, o app precisa estar na tela inicial.
+      <br><br><button class="btn-primary" style="padding:10px" onclick="reqNotif()">Ativar notificações</button>
+    </div>
+    <div id="next-dose-wrap" style="display:none">
+      <div class="next-dose"><div style="font-size:2rem">💊</div><div><div class="nd-label">Próximo remédio</div><div class="nd-val" id="next-dose-val">—</div></div></div>
+    </div>
+    <p class="section-title">Meus remédios</p>
+    <div class="card-list" id="med-list"></div>
+    <button class="btn-primary" onclick="showAddMed()">+ Adicionar remédio</button>
+  </div>
+
+  <!-- CONTACTS -->
+  <div class="screen" id="screen-contacts">
+    <div class="header"><h1>Contatos</h1></div>
+    <div id="contacts-locked" class="empty-state" style="display:none">🔒 Apenas a Milena pode gerenciar contatos.</div>
+    <div id="contacts-content">
+      <p class="section-title">Contatos de emergência</p>
+      <div class="card-list" id="contact-list"></div>
+      <button class="btn-primary" onclick="showAddContact()">+ Adicionar contato</button>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="screen" id="screen-history">
+    <div class="header"><h1>Histórico <span id="role-chip-history"></span></h1></div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="screen" id="screen-settings">
+    <div class="header"><h1>Configurações</h1></div>
+    <div id="settings-locked" class="empty-state" style="display:none">🔒 Apenas a Milena pode acessar.</div>
+    <div id="settings-content">
+      <p class="section-title">Mensagem de emergência</p>
+      <div class="settings-card"><div style="padding:14px">
+        <textarea id="msg-template" class="form-input" rows="3" style="resize:none"></textarea>
+        <button class="btn-primary" style="margin-top:8px" onclick="saveMsg()">Salvar mensagem</button>
+      </div></div>
+      <p class="section-title">Segurança</p>
+      <div class="settings-card"><div style="padding:14px">
+        <button class="btn-danger" onclick="startChangePins()">🔑 Alterar PINs</button>
+      </div></div>
+      <p class="section-title">Instalar app</p>
+      <div class="settings-card">
+        <div class="s-row">
+          <div><div class="s-label">Adicionar à tela inicial</div><div style="font-size:.73rem;color:var(--muted);margin-top:2px">Safari → Compartilhar → "Adicionar à Tela de Início"</div></div>
+          <span style="font-size:1.4rem">📲</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-home" onclick="goTo('home')"><span class="icon">🏠</span>Início</button>
+    <button class="nav-btn" id="nav-meds" onclick="goTo('meds')"><span class="icon">💊</span>Remédios</button>
+    <button class="nav-btn" id="nav-contacts" onclick="goTo('contacts')"><span class="icon">👥</span>Contatos</button>
+    <button class="nav-btn" id="nav-history" onclick="goTo('history')"><span class="icon">📋</span>Histórico</button>
+    <button class="nav-btn" id="nav-settings" onclick="goTo('settings')"><span class="icon">⚙️</span>Config.</button>
+  </div>
+</div>
+
+<!-- MODAL: ADD MED -->
+<div class="modal-overlay" id="modal-med">
+  <div class="modal">
+    <div class="modal-title">Novo remédio</div>
+    <div class="modal-sub">Configure nome, horário e repetição</div>
+    <div class="form-group"><label class="form-label">Nome do remédio</label><input class="form-input" id="med-name" placeholder="Ex: Depakote 250mg" type="text"/></div>
+    <div class="form-group"><label class="form-label">Primeiro horário</label><input class="form-input" id="med-time" type="time"/></div>
+    <div class="form-group">
+      <label class="form-label">Repetir a cada</label>
+      <div class="pills" id="repeat-pills">
+        <div class="pill" data-h="1" onclick="selPill(this)">1h</div>
+        <div class="pill" data-h="2" onclick="selPill(this)">2h</div>
+        <div class="pill" data-h="3" onclick="selPill(this)">3h</div>
+        <div class="pill" data-h="4" onclick="selPill(this)">4h</div>
+        <div class="pill active" data-h="6" onclick="selPill(this)">6h</div>
+        <div class="pill" data-h="8" onclick="selPill(this)">8h</div>
+        <div class="pill" data-h="12" onclick="selPill(this)">12h</div>
+        <div class="pill" data-h="24" onclick="selPill(this)">24h</div>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Observação (opcional)</label><input class="form-input" id="med-note" placeholder="Ex: Tomar com água" type="text"/></div>
+    <button class="btn-primary" id="btn-save-med" onclick="saveMed()">Salvar remédio</button>
+    <button class="btn-secondary" onclick="closeModal('modal-med')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: ADD CONTACT -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-title">Novo contato de emergência</div>
+    <div class="modal-sub">Receberá o alerta pelo WhatsApp</div>
+    <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="input-name" placeholder="Ex: João Silva" type="text"/></div>
+    <div class="form-group"><label class="form-label">WhatsApp (código país + DDD + número)</label><input class="form-input" id="input-phone" placeholder="Ex: 5562999998888" type="tel"/></div>
+    <button class="btn-primary" id="btn-save-contact" onclick="saveContact()">Salvar</button>
+    <button class="btn-secondary" onclick="closeModal('modal-add')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: SOS -->
+<div class="modal-overlay" id="modal-sos">
+  <div class="modal">
+    <div class="confirm-big">🆘</div>
+    <div class="modal-title" style="text-align:center">Enviando alerta!</div>
+    <div class="modal-sub" style="text-align:center" id="sos-sub">Selecione para quem enviar:</div>
+    <div id="sos-contact-list" style="display:flex;flex-direction:column;gap:10px;margin:16px 0"></div>
+    <div class="countdown-bar"><div class="countdown-fill" id="countdown-fill" style="width:100%"></div></div>
+    <button class="btn-secondary" onclick="cancelSOS()">❌ Cancelar (foi engano)</button>
+  </div>
+</div>
+
+<!-- MODAL: CHANGE PINS -->
+<div class="modal-overlay" id="modal-change-pin">
+  <div class="modal">
+    <div class="modal-title">Alterar PINs</div>
+    <div class="modal-sub" id="cp-sub">Confirme o PIN atual da Milena</div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="pin-dots" id="cpd"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
+      <div class="pin-keypad" id="cpk"></div>
+    </div>
+    <button class="btn-secondary" style="margin-top:14px" onclick="closeModal('modal-change-pin')">Cancelar</button>
+  </div>
+</div>
+
+<script>
+// ── API (chama Vercel Functions — chave fica no servidor) ──
+async function apiFetch(path, method='GET', body=null){
+  const opts={method,headers:{'Content-Type':'application/json'}};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch('/api/'+path,opts);
+  if(!r.ok){const e=await r.text();throw new Error(e);}
+  const t=await r.text();
+  return t?JSON.parse(t):null;
+}
+
+const db={
+  async getSettings(){const r=await apiFetch('settings');return r&&r[0]||null;},
+  async saveSettings(d){return apiFetch('settings','PATCH',d);},
+  async getContacts(){return apiFetch('contacts');},
+  async addContact(d){return apiFetch('contacts','POST',d);},
+  async delContact(id){return apiFetch('contacts?id='+id,'DELETE');},
+  async getMeds(){return apiFetch('meds');},
+  async addMed(d){return apiFetch('meds','POST',d);},
+  async delMed(id){return apiFetch('meds?id='+id,'DELETE');},
+  async updateMed(id,d){return apiFetch('meds?id='+id,'PATCH',d);},
+  async getHistory(){return apiFetch('history');},
+  async addHistory(d){return apiFetch('history','POST',d);},
+};
+
+// ── HASH ──────────────────────────────────────────────
+async function hp(p){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(p+'mlna25'));
+  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+// ── STATE (in-memory cache) ───────────────────────────
+let S={pinMilena:null,pinGuest:null,msgTemplate:'🆘 EMERGÊNCIA: Milena está passando mal e precisa de ajuda! Por favor entre em contato ou vá até ela.',checkinDeadline:Date.now()+6*3600*1000};
+let contacts=[],meds=[],role=null,sosTimer=null,ciInterval=null,medInterval=null;
+
+// ── LAYERS ────────────────────────────────────────────
+function showLayer(id){
+  ['loading-screen','setup-screen','pin-screen','app'].forEach(x=>{
+    const el=document.getElementById(x);
+    el.style.display=x===id?'flex':'none';
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────
+async function init(){
+  showLayer('loading-screen');
+  try{
+    const cfg=await db.getSettings();
+    if(cfg){
+      if(cfg.pin_milena)S.pinMilena=cfg.pin_milena;
+      if(cfg.pin_guest)S.pinGuest=cfg.pin_guest;
+      if(cfg.msg_template)S.msgTemplate=cfg.msg_template;
+      if(cfg.checkin_deadline)S.checkinDeadline=parseInt(cfg.checkin_deadline)||S.checkinDeadline;
+    }
+    if(!S.pinMilena||!S.pinGuest)initSetup();
+    else initPin();
+  }catch(e){
+    toast('⚠️ Erro ao conectar ao banco. Verifique a conexão.');
+    console.error(e);
+    // fallback to local
+    if(!S.pinMilena||!S.pinGuest)initSetup();
+    else initPin();
+  }
+}
+
+// ── KEYPAD ────────────────────────────────────────────
+function bKP(id,onD,onDel){
+  const el=document.getElementById(id);el.innerHTML='';
+  [1,2,3,4,5,6,7,8,9,'',0,'⌫'].forEach(k=>{
+    const b=document.createElement('button');
+    b.className='pin-key'+(k===''?' empty':'')+(k==='⌫'?' del':'');
+    b.textContent=k;
+    if(k!=='')b.onclick=()=>k==='⌫'?onDel():onD(String(k));
+    el.appendChild(b);
+  });
+}
+function uDots(id,val,err=false){
+  document.getElementById(id).querySelectorAll('.pin-dot').forEach((d,i)=>{
+    d.classList.toggle('filled',i<val.length&&!err);
+    d.classList.toggle('error',i<val.length&&err);
+  });
+}
+function shake(id){const e=document.getElementById(id);e.classList.add('pin-shake');setTimeout(()=>e.classList.remove('pin-shake'),500);}
+
+// ── SETUP ─────────────────────────────────────────────
+let sv={1:'',2:'',3:'',4:''},tp1='',tp3='';
+function initSetup(){
+  sv={1:'',2:'',3:'',4:''};tp1='';tp3='';
+  showLayer('setup-screen');
+  document.querySelectorAll('.setup-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('setup-1').classList.add('active');
+  bSetup(1);
+}
+function bSetup(n){sv[n]='';uDots('sd'+n,'');bKP('sk'+n,async d=>{if(sv[n].length>=4)return;sv[n]+=d;uDots('sd'+n,sv[n]);if(sv[n].length===4)setTimeout(()=>onSD(n),180);},()=>{sv[n]=sv[n].slice(0,-1);uDots('sd'+n,sv[n]);});}
+async function onSD(n){
+  if(n===1){tp1=sv[1];gSS(2);}
+  else if(n===2){if(sv[2]!==tp1){eS(2,'PINs não coincidem');return;}gSS(3);}
+  else if(n===3){if(sv[3]===tp1){eS(3,'Deve ser diferente do PIN da Milena');return;}tp3=sv[3];gSS(4);}
+  else if(n===4){
+    if(sv[4]!==tp3){eS(4,'PINs não coincidem');return;}
+    S.pinMilena=await hp(tp1);S.pinGuest=await hp(tp3);
+    try{await db.saveSettings({pin_milena:S.pinMilena,pin_guest:S.pinGuest,msg_template:S.msgTemplate,checkin_deadline:S.checkinDeadline});}catch(e){console.error(e);}
+    toast('✅ PINs criados!');initPin();
+  }
+}
+function eS(n,msg){shake('sd'+n);uDots('sd'+n,sv[n],true);toast('⚠️ '+msg);setTimeout(()=>{sv[n]='';uDots('sd'+n,'');},500);}
+function gSS(n){document.querySelectorAll('.setup-step').forEach(s=>s.classList.remove('active'));document.getElementById('setup-'+n).classList.add('active');bSetup(n);}
+
+// ── PIN ───────────────────────────────────────────────
+let pv='';
+function initPin(){
+  showLayer('pin-screen');pv='';uDots('pin-dots','');
+  bKP('pin-keypad',async d=>{
+    if(pv.length>=4)return;
+    pv+=d;uDots('pin-dots',pv);
+    if(pv.length===4){
+      const h=await hp(pv);
+      if(h===S.pinMilena){role='milena';await enterApp();}
+      else if(h===S.pinGuest){role='guest';await enterApp();}
+      else{uDots('pin-dots',pv,true);shake('pin-dots');toast('⚠️ PIN incorreto');setTimeout(()=>{pv='';uDots('pin-dots','');},500);}
+    }
+  },()=>{pv=pv.slice(0,-1);uDots('pin-dots',pv);});
+}
+
+// ── ENTER APP ─────────────────────────────────────────
+async function enterApp(){
+  showLayer('loading-screen');
+  try{
+    contacts=await db.getContacts()||[];
+    meds=await db.getMeds()||[];
+  }catch(e){contacts=[];meds=[];toast('⚠️ Erro ao carregar dados');}
+  showLayer('app');
+  applyRole();
+  goTo(role==='guest'?'history':'home');
+  startCI();startMedLoop();
+  document.getElementById('msg-template').value=S.msgTemplate;
+  renderContacts();renderMeds();
+  checkNotifBanner();
+}
+
+function applyRole(){
+  const g=role==='guest';
+  document.getElementById('contacts-locked').style.display=g?'block':'none';
+  document.getElementById('contacts-content').style.display=g?'none':'block';
+  document.getElementById('settings-locked').style.display=g?'block':'none';
+  document.getElementById('settings-content').style.display=g?'none':'block';
+  document.getElementById('nav-home').style.display=g?'none':'flex';
+  document.getElementById('nav-meds').style.display=g?'none':'flex';
+  document.getElementById('role-chip-history').innerHTML=g?'<span class="role-chip guest">Convidado</span>':'<span class="role-chip milena">Milena</span>';
+}
+
+// ── NAV ───────────────────────────────────────────────
+function goTo(name){
+  document.querySelectorAll('#app .screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  const nb=document.getElementById('nav-'+name);if(nb)nb.classList.add('active');
+  if(name==='history')renderHistory();
+  if(name==='contacts')renderContacts();
+  if(name==='meds'){renderMeds();updateNextDose();}
+}
+
+// ── TOAST ─────────────────────────────────────────────
+function toast(msg,col){
+  const t=document.getElementById('toast');t.textContent=msg;t.style.background=col||'var(--bg3)';
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── CONTACTS ─────────────────────────────────────────
+function renderContacts(){
+  const l=document.getElementById('contact-list');
+  l.innerHTML=contacts.length
+    ?contacts.map(c=>`
+      <div class="card-item">
+        <div class="card-avatar av-teal">${c.name[0].toUpperCase()}</div>
+        <div class="card-info"><div class="card-name">${c.name}</div><div class="card-sub">+${c.phone}</div></div>
+        <button class="card-del" onclick="delContact('${c.id}','${c.name}')">🗑 Excluir</button>
+      </div>`).join('')
+    :'<div class="empty-state">Nenhum contato cadastrado.</div>';
+  document.getElementById('contacts-badge').textContent=contacts.length+(contacts.length===1?' contato':' contatos');
+}
+
+function showAddContact(){document.getElementById('input-name').value='';document.getElementById('input-phone').value='';openModal('modal-add');}
+
+async function saveContact(){
+  const n=document.getElementById('input-name').value.trim();
+  const p=document.getElementById('input-phone').value.replace(/\D/g,'');
+  if(!n||p.length<10){toast('⚠️ Preencha nome e telefone válido');return;}
+  const btn=document.getElementById('btn-save-contact');btn.disabled=true;btn.textContent='Salvando...';
+  try{
+    const r=await db.addContact({name:n,phone:p});
+    if(r&&r[0]){contacts.push(r[0]);renderContacts();closeModal('modal-add');toast('✅ Contato salvo!');}
+    else{toast('⚠️ Resposta inesperada do banco');console.error('Resposta:',r);}
+  }catch(e){
+    const msg=e.message||'Erro desconhecido';
+    toast('⚠️ '+msg.substring(0,60));
+    console.error('Erro completo ao salvar contato:',e);
+    alert('Erro ao salvar contato:\n'+msg);
+  }
+  btn.disabled=false;btn.textContent='Salvar';
+}
+
+async function delContact(id,name){
+  if(!confirm('Remover '+name+'?'))return;
+  try{
+    await db.delContact(id);
+    contacts=contacts.filter(c=>c.id!==id);renderContacts();toast('🗑 Contato removido');
+  }catch(e){toast('⚠️ Erro ao remover contato');}
+}
+
+// ── SOS ───────────────────────────────────────────────
+function triggerSOS(){
+  if(!contacts.length){toast('⚠️ Cadastre ao menos um contato!');goTo('contacts');return;}
+  // build contact buttons
+  const list=document.getElementById('sos-contact-list');
+  list.innerHTML=contacts.map(c=>`
+    <button onclick="sendWAContact('${c.id}')" style="background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;color:var(--text);font-size:.95rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;text-align:left">
+      <span style="font-size:1.4rem">📲</span>
+      <div>
+        <div style="font-weight:700">${c.name}</div>
+        <div style="font-size:.75rem;color:var(--muted)">+${c.phone}</div>
+      </div>
+    </button>`).join('');
+  // add send all button
+  list.innerHTML+=`<button onclick="sendWAAll()" style="background:var(--danger);border:none;border-radius:12px;padding:14px 16px;color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;width:100%">🆘 Enviar para TODOS</button>`;
+  openModal('modal-sos');
+  // auto countdown 10s
+  let pct=100;const fill=document.getElementById('countdown-fill');
+  sosTimer=setInterval(()=>{pct-=1;fill.style.width=pct+'%';if(pct<=0){clearInterval(sosTimer);sosTimer=null;sendWAAll();}},100);
+}
+
+function cancelSOS(){if(sosTimer){clearInterval(sosTimer);sosTimer=null;}closeModal('modal-sos');toast('Alerta cancelado');}
+
+function sendWAContact(id){
+  const c=contacts.find(x=>x.id===id);if(!c)return;
+  const msg=encodeURIComponent(S.msgTemplate);
+  window.open('https://wa.me/'+c.phone+'?text='+msg,'_blank');
+  addHistoryDB('sos','🆘 SOS enviado para: '+c.name);
+  toast('🆘 Mensagem aberta para '+c.name+'!');
+}
+
+function sendWAAll(){
+  if(sosTimer){clearInterval(sosTimer);sosTimer=null;}
+  closeModal('modal-sos');
+  const msg=encodeURIComponent(S.msgTemplate);
+  contacts.forEach((c,i)=>setTimeout(()=>window.open('https://wa.me/'+c.phone+'?text='+msg,'_blank'),i*900));
+  addHistoryDB('sos','🆘 SOS disparado para: '+contacts.map(c=>c.name).join(', '));
+  toast('🆘 Alertas enviados para '+contacts.length+' contato(s)!');
+  S.checkinDeadline=Date.now()+6*3600*1000;
+  db.saveSettings({checkin_deadline:S.checkinDeadline}).catch(e=>console.error(e));
+}
+
+// ── CHECK-IN ──────────────────────────────────────────
+function doCheckin(){
+  S.checkinDeadline=Date.now()+6*3600*1000;
+  db.saveSettings({checkin_deadline:S.checkinDeadline}).catch(e=>console.error(e));
+  addHistoryDB('checkin','✅ Check-in realizado — Milena está bem');
+  toast('✅ Check-in registrado!');
+}
+function startCI(){
+  if(ciInterval)clearInterval(ciInterval);
+  ciInterval=setInterval(()=>{
+    const diff=S.checkinDeadline-Date.now();
+    const el=document.getElementById('checkin-timer');if(!el)return;
+    if(diff<=0){
+      el.textContent='00:00:00';el.classList.add('urgent');
+      const k='m_'+S.checkinDeadline;
+      if(!sessionStorage.getItem(k)){
+        sessionStorage.setItem(k,'1');
+        addHistoryDB('missed','⚠️ Check-in perdido — alerta automático disparado');
+        if(contacts.length)sendWA();
+        S.checkinDeadline=Date.now()+6*3600*1000;
+        db.saveSettings({checkin_deadline:S.checkinDeadline}).catch(e=>console.error(e));
+      }
+    }else{
+      el.classList.remove('urgent');
+      const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+      el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+  },1000);
+}
+
+// ── MEDS ─────────────────────────────────────────────
+function selPill(el){document.querySelectorAll('#repeat-pills .pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');}
+
+function showAddMed(){
+  document.getElementById('med-name').value='';document.getElementById('med-note').value='';
+  const now=new Date();
+  document.getElementById('med-time').value=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  document.querySelectorAll('#repeat-pills .pill').forEach(p=>p.classList.remove('active'));
+  document.querySelector('#repeat-pills .pill[data-h="6"]').classList.add('active');
+  openModal('modal-med');
+}
+
+async function saveMed(){
+  const name=document.getElementById('med-name').value.trim();
+  const time=document.getElementById('med-time').value;
+  const note=document.getElementById('med-note').value.trim();
+  const ap=document.querySelector('#repeat-pills .pill.active');
+  if(!name||!time){toast('⚠️ Preencha nome e horário');return;}
+  const iH=ap?parseInt(ap.dataset.h):6;
+  const [hh,mm]=time.split(':').map(Number);
+  const next=new Date();next.setHours(hh,mm,0,0);
+  if(next.getTime()<=Date.now())next.setDate(next.getDate()+1);
+  const btn=document.getElementById('btn-save-med');btn.disabled=true;btn.textContent='Salvando...';
+  try{
+    const r=await db.addMed({name,time,note,interval_h:iH,next_dose:next.getTime(),active:true});
+    meds.push(r[0]);renderMeds();updateNextDose();closeModal('modal-med');toast('✅ Remédio salvo!');scheduleMedNotifs();
+  }catch(e){toast('⚠️ Erro ao salvar remédio');console.error(e);}
+  btn.disabled=false;btn.textContent='Salvar remédio';
+}
+
+function renderMeds(){
+  const l=document.getElementById('med-list');
+  if(!meds.length){l.innerHTML='<div class="empty-state">Nenhum remédio cadastrado ainda.</div>';return;}
+  l.innerHTML=meds.map(m=>`
+    <div class="card-item">
+      <div class="card-avatar av-blue">💊</div>
+      <div class="card-info">
+        <div class="card-name">${m.name}</div>
+        <div class="card-sub">Início: ${m.time} · a cada ${m.interval_h}h${m.note?' · '+m.note:''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div class="toggle-track ${m.active?'on':''}" onclick="toggleMed('${m.id}')"><div class="toggle-thumb"></div></div>
+        <button class="card-del" onclick="delMed('${m.id}','${m.name}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleMed(id){
+  const m=meds.find(x=>x.id===id);if(!m)return;
+  m.active=!m.active;
+  renderMeds();updateNextDose();
+  try{await db.updateMed(id,{active:m.active});}catch(e){m.active=!m.active;renderMeds();toast('⚠️ Erro ao atualizar');}
+}
+
+async function delMed(id,name){
+  if(!confirm('Remover '+name+'?'))return;
+  try{
+    await db.delMed(id);
+    meds=meds.filter(m=>m.id!==id);renderMeds();updateNextDose();toast('🗑 Remédio removido');
+  }catch(e){toast('⚠️ Erro ao remover remédio');console.error(e);}
+}
+
+function updateNextDose(){
+  const active=meds.filter(m=>m.active);
+  const wrap=document.getElementById('next-dose-wrap');
+  if(!active.length){wrap.style.display='none';return;}
+  const next=active.reduce((a,b)=>(a.next_dose||0)<(b.next_dose||0)?a:b);
+  const diff=(next.next_dose||0)-Date.now();
+  if(diff<0){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);
+  document.getElementById('next-dose-val').textContent=next.name+' — '+String(h).padStart(2,'0')+'h'+String(m).padStart(2,'0')+'m';
+}
+
+function startMedLoop(){
+  if(medInterval)clearInterval(medInterval);
+  medInterval=setInterval(async()=>{
+    const now=Date.now();let changed=false;
+    for(const m of meds){
+      if(!m.active)continue;
+      if(now>=(m.next_dose||0)){
+        fireInAppMed(m);
+        m.next_dose=now+m.interval_h*3600*1000;
+        try{await db.updateMed(m.id,{next_dose:m.next_dose});}catch(e){}
+        changed=true;
+      }
+    }
+    if(changed)updateNextDose();
+  },30000);
+  updateNextDose();
+}
+
+function fireInAppMed(m){
+  if(navigator.vibrate)navigator.vibrate([300,100,300,100,300]);
+  if(Notification.permission==='granted'){
+    try{new Notification('💊 Hora do remédio!',{body:m.name+(m.note?' — '+m.note:''),tag:'med_'+m.id,requireInteraction:true});}catch(e){}
+  }
+  toast('💊 Hora do remédio: '+m.name);
+  addHistoryDB('med','💊 Lembrete: '+m.name+(m.note?' ('+m.note+')':''));
+}
+
+function scheduleMedNotifs(){
+  const now=Date.now();
+  meds.filter(m=>m.active).forEach(m=>{
+    const diff=(m.next_dose||0)-now;
+    if(diff>0&&diff<=3600*1000){
+      setTimeout(()=>{
+        if(Notification.permission==='granted'){
+          try{new Notification('💊 Hora do remédio!',{body:m.name+(m.note?' — '+m.note:''),tag:'med_'+m.id,requireInteraction:true});}catch(e){}
+        }
+        if(navigator.vibrate)navigator.vibrate([300,100,300,100,300]);
+      },diff);
+    }
+  });
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────
+function checkNotifBanner(){
+  if(!('Notification' in window)||Notification.permission==='granted')
+    document.getElementById('notif-banner').style.display='none';
+}
+async function reqNotif(){
+  if(!('Notification' in window)){toast('⚠️ Navegador não suporta notificações');return;}
+  const p=await Notification.requestPermission();
+  if(p==='granted'){document.getElementById('notif-banner').style.display='none';toast('✅ Notificações ativadas!');scheduleMedNotifs();}
+  else toast('⚠️ Permissão negada. Habilite nas configurações do iPhone.');
+}
+
+// ── HISTORY ───────────────────────────────────────────
+async function addHistoryDB(type,text){
+  try{await db.addHistory({type,text,time:new Date().toLocaleString('pt-BR')});}catch(e){console.error(e);}
+}
+async function renderHistory(){
+  const l=document.getElementById('history-list');
+  l.innerHTML='<div class="empty-state">Carregando...</div>';
+  try{
+    const h=await db.getHistory()||[];
+    l.innerHTML=h.length
+      ?h.map(x=>`<div class="history-item"><div class="hdot ${x.type}"></div><div><div class="h-title">${x.text}</div><div class="h-time">${x.time}</div></div></div>`).join('')
+      :'<div class="empty-state">Nenhum evento registrado ainda.</div>';
+  }catch(e){l.innerHTML='<div class="empty-state">Erro ao carregar histórico.</div>';}
+}
+
+// ── SETTINGS ─────────────────────────────────────────
+async function saveMsg(){
+  S.msgTemplate=document.getElementById('msg-template').value.trim()||S.msgTemplate;
+  try{await db.saveSettings({msg_template:S.msgTemplate});toast('✅ Mensagem salva!');}
+  catch(e){toast('⚠️ Erro ao salvar mensagem');}
+}
+
+// ── CHANGE PINS ───────────────────────────────────────
+let cpStep=0,cpVal='',_nm='',_ng='';
+function startChangePins(){cpStep=0;cpVal='';_nm='';_ng='';document.getElementById('cp-sub').textContent='Confirme o PIN atual da Milena';bCPKP();openModal('modal-change-pin');}
+function bCPKP(){cpVal='';uDots('cpd','');bKP('cpk',async d=>{if(cpVal.length>=4)return;cpVal+=d;uDots('cpd',cpVal);if(cpVal.length===4)setTimeout(()=>handleCP(),180);},()=>{cpVal=cpVal.slice(0,-1);uDots('cpd',cpVal);});}
+async function handleCP(){
+  const sub=t=>document.getElementById('cp-sub').textContent=t;
+  if(cpStep===0){if(await hp(cpVal)!==S.pinMilena){eCPErr();return;}cpStep=1;sub('Novo PIN da Milena');bCPKP();}
+  else if(cpStep===1){_nm=cpVal;cpStep=2;sub('Confirme o novo PIN da Milena');bCPKP();}
+  else if(cpStep===2){if(cpVal!==_nm){eCPErr();return;}cpStep=3;sub('Novo PIN dos Convidados');bCPKP();}
+  else if(cpStep===3){if(cpVal===_nm){shake('cpd');uDots('cpd',cpVal,true);toast('⚠️ Deve ser diferente');setTimeout(()=>{cpVal='';uDots('cpd','');},500);return;}_ng=cpVal;cpStep=4;sub('Confirme o novo PIN dos Convidados');bCPKP();}
+  else if(cpStep===4){
+    if(cpVal!==_ng){eCPErr();return;}
+    S.pinMilena=await hp(_nm);S.pinGuest=await hp(_ng);
+    try{await db.saveSettings({pin_milena:S.pinMilena,pin_guest:S.pinGuest});toast('✅ PINs alterados!');closeModal('modal-change-pin');}
+    catch(e){toast('⚠️ Erro ao salvar PINs');}
+  }
+}
+function eCPErr(){shake('cpd');uDots('cpd',cpVal,true);toast('⚠️ PIN incorreto ou não coincide');setTimeout(()=>{cpVal='';uDots('cpd','');},500);}
+
+// ── MODAL ─────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('active');}
+function closeModal(id){document.getElementById(id).classList.remove('active');}
+
+// ── START ──────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
