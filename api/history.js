@@ -2,6 +2,7 @@ const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_KEY;
 
 async function sbFetch(path, method = 'GET', body = null) {
+  if (!SB_URL || !SB_KEY) throw new Error('Variáveis de ambiente não configuradas');
   const opts = {
     method,
     headers: {
@@ -14,24 +15,27 @@ async function sbFetch(path, method = 'GET', body = null) {
   if (body) opts.body = JSON.stringify(body);
   const r = await fetch(SB_URL + '/rest/v1/' + path, opts);
   const t = await r.text();
-  return { status: r.status, body: t ? JSON.parse(t) : null };
+  if (!r.ok) throw new Error(`Supabase error ${r.status}: ${t}`);
+  return t ? JSON.parse(t) : null;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  if (req.method === 'GET') {
-    const { status, body } = await sbFetch('history?order=created_at.desc&limit=100');
-    return res.status(status).json(body);
+  try {
+    if (req.method === 'GET') {
+      const data = await sbFetch('history?order=created_at.desc&limit=100');
+      return res.status(200).json(data || []);
+    }
+    if (req.method === 'POST') {
+      const data = await sbFetch('history', 'POST', req.body);
+      return res.status(200).json(data);
+    }
+    return res.status(405).json({ error: 'Method not allowed: ' + req.method });
+  } catch (e) {
+    console.error('history error:', e.message);
+    return res.status(500).json({ error: e.message });
   }
-
-  if (req.method === 'POST') {
-    const { status, body } = await sbFetch('history', 'POST', req.body);
-    return res.status(status).json(body);
-  }
-
-  res.status(405).json({ error: 'Method not allowed' });
 }

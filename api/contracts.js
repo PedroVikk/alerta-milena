@@ -19,36 +19,26 @@ async function sbFetch(path, method = 'GET', body = null) {
   return t ? JSON.parse(t) : null;
 }
 
-export default async function handler(req, res) {
-  console.log('contacts called:', req.method, JSON.stringify(req.body));
+module.exports = async function handler(req, res) {
+  console.log('contacts:', req.method, req.body);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   try {
     if (req.method === 'GET') {
       const data = await sbFetch('contacts?order=created_at.asc');
       return res.status(200).json(data || []);
     }
-
     if (req.method === 'POST') {
-      let body = req.body;
-      // parse body if it's a string
-      if (typeof body === 'string') {
-        try { body = JSON.parse(body); } catch(e) {}
-      }
-      const data = await sbFetch('contacts', 'POST', body);
+      const data = await sbFetch('contacts', 'POST', req.body);
       return res.status(200).json(data);
     }
-
     if (req.method === 'DELETE') {
       const id = req.query.id;
       await sbFetch('contacts?id=eq.' + id, 'DELETE');
       return res.status(200).json({ success: true });
     }
-
     return res.status(405).json({ error: 'Method not allowed: ' + req.method });
   } catch (e) {
     console.error('contacts error:', e.message);

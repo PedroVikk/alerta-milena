@@ -1,5 +1,14 @@
 {
-  "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  "version": 2,
+  "builds": [
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "index.html", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/contacts", "dest": "/api/contacts.js" },
+    { "src": "/api/meds", "dest": "/api/meds.js" },
+    { "src": "/api/settings", "dest": "/api/settings.js" },
+    { "src": "/api/history", "dest": "/api/history.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }

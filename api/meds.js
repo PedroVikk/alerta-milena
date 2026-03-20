@@ -19,12 +19,11 @@ async function sbFetch(path, method = 'GET', body = null) {
   return t ? JSON.parse(t) : null;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   try {
     if (req.method === 'GET') {
       const data = await sbFetch('meds?order=created_at.asc');
@@ -35,18 +34,18 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
     if (req.method === 'PATCH') {
-      const { id } = req.query;
+      const id = req.query.id;
       const data = await sbFetch('meds?id=eq.' + id, 'PATCH', req.body);
       return res.status(200).json(data);
     }
     if (req.method === 'DELETE') {
-      const { id } = req.query;
+      const id = req.query.id;
       await sbFetch('meds?id=eq.' + id, 'DELETE');
       return res.status(200).json({ success: true });
     }
-    res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed: ' + req.method });
   } catch (e) {
-    console.error('meds error:', e);
-    res.status(500).json({ error: e.message });
+    console.error('meds error:', e.message);
+    return res.status(500).json({ error: e.message });
   }
 }
