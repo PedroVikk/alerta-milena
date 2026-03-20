@@ -19,7 +19,7 @@ async function sbFetch(path, method = 'GET', body = null) {
   return t ? JSON.parse(t) : null;
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   console.log('contacts:', req.method, req.body);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
