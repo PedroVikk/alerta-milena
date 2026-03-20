@@ -121,6 +121,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .pin-key.empty{background:transparent;border:none;cursor:default;}
 .pin-shake{animation:shake .4s;}
 @keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-8px);}40%,80%{transform:translateX(8px);}}
+.patch-card{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;margin-bottom:12px;}
+.patch-version{font-size:.95rem;font-weight:700;color:var(--accent);margin-bottom:4px;}
+.patch-date{font-size:.72rem;color:var(--muted);margin-bottom:10px;}
+.patch-items{display:flex;flex-direction:column;gap:8px;}
+.patch-item{font-size:.82rem;color:var(--text);margin-left:12px;position:relative;padding-left:8px;}
+.patch-item:before{content:'✓';position:absolute;left:-12px;color:var(--ok);font-weight:700;}
 .setup-step{display:none;width:100%;max-width:300px;flex-direction:column;align-items:center;text-align:center;}
 .setup-step.active{display:flex;}
 .role-chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;margin-left:6px;}
@@ -252,6 +258,13 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
         <button class="btn-danger" onclick="startChangePins()">🔑 Alterar PINs</button>
         <button class="btn-secondary" style="margin-top:8px;background:#d97706" onclick="logoutSession()">🚪 Sair da sessão</button>
       </div></div>
+      <p class="section-title">Sobre</p>
+      <div class="settings-card">
+        <div class="s-row" onclick="showPatchNotes()">
+          <div><div class="s-label">📝 Novidades e Melhorias</div><div style="font-size:.73rem;color:var(--muted);margin-top:2px">Veja o histórico de atualizações</div></div>
+          <span style="font-size:1.4rem">→</span>
+        </div>
+      </div>
       <p class="section-title">Instalar app</p>
       <div class="settings-card">
         <div class="s-row">
@@ -342,6 +355,16 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   </div>
 </div>
 
+<!-- MODAL: PATCH NOTES -->
+<div class="modal-overlay" id="modal-patch-notes">
+  <div class="modal" style="max-height:85vh">
+    <div class="modal-title">📝 Novidades</div>
+    <div class="modal-sub">Histórico de melhorias e atualizações</div>
+    <div id="patch-notes-list" style="margin-top:16px;display:flex;flex-direction:column;gap:12px"></div>
+    <button class="btn-secondary" style="margin-top:16px" onclick="closeModal('modal-patch-notes')">Fechar</button>
+  </div>
+</div>
+
 <script>
 // ── API ───────────────────────────────────────────────
 async function apiFetch(path,method='GET',body=null){
@@ -403,6 +426,46 @@ function getSessionTimeRemaining(){
 }
 
 const DAY_NAMES=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+// ── PATCH NOTES ───────────────────────────────────────
+const PATCH_NOTES=[
+  {
+    version:'1.1.0',
+    date:'20 de março, 2026',
+    items:[
+      '⏰ Sistema de sessão com expiração de 12 horas',
+      '🚪 Botão "Sair da sessão" nas configurações',
+      '📝 Aba de Novidades com histórico de melhorias',
+      '🔐 Melhor controle de acesso entre Milena e Convidados'
+    ]
+  },
+  {
+    version:'1.0.0',
+    date:'Versão inicial',
+    items:[
+      '🆘 Botão SOS com alertas pelo WhatsApp',
+      '📋 Sistema de check-in automático (6h)',
+      '💊 Gerenciador de remédios com lembretes',
+      '👥 Gerenciador de contatos de emergência',
+      '🔐 Sistema de PIN com 2 níveis de acesso (Milena e Convidados)',
+      '📱 Interface otimizada para dispositivos móveis'
+    ]
+  }
+];
+
+function showPatchNotes(){
+  const list=document.getElementById('patch-notes-list');
+  list.innerHTML=PATCH_NOTES.map(p=>`
+    <div class="patch-card">
+      <div class="patch-version">🔖 v${p.version}</div>
+      <div class="patch-date">📅 ${p.date}</div>
+      <div class="patch-items">
+        ${p.items.map(item=>`<div class="patch-item">${item}</div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+  openModal('modal-patch-notes');
+}
 
 // ── LAYERS ────────────────────────────────────────────
 function showLayer(id){
