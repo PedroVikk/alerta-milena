@@ -250,6 +250,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
       <p class="section-title">Segurança</p>
       <div class="settings-card"><div style="padding:14px">
         <button class="btn-danger" onclick="startChangePins()">🔑 Alterar PINs</button>
+        <button class="btn-secondary" style="margin-top:8px;background:#d97706" onclick="logoutSession()">🚪 Sair da sessão</button>
       </div></div>
       <p class="section-title">Instalar app</p>
       <div class="settings-card">
@@ -373,7 +374,33 @@ async function hp(p){
 
 // ── STATE ─────────────────────────────────────────────
 let S={pinMilena:null,pinGuest:null,msgTemplate:'🆘 EMERGÊNCIA: Milena está passando mal e precisa de ajuda! Por favor entre em contato ou vá até ela.',checkinDeadline:Date.now()+6*3600*1000};
-let contacts=[],meds=[],role=null,sosTimer=null,ciInterval=null,medInterval=null;
+let contacts=[],meds=[],role=null,sosTimer=null,ciInterval=null,medInterval=null,sessionExpireTimer=null;
+
+// ── SESSION ───────────────────────────────────────────
+const SESSION_DURATION=12*3600*1000; // 12 horas em ms
+function getSessionStart(){
+  const stored=localStorage.getItem('sessionStart');
+  return stored?parseInt(stored):null;
+}
+function setSessionStart(){
+  const now=Date.now();
+  localStorage.setItem('sessionStart',String(now));
+}
+function clearSession(){
+  localStorage.removeItem('sessionStart');
+  if(sessionExpireTimer){clearInterval(sessionExpireTimer);sessionExpireTimer=null;}
+}
+function isSessionValid(){
+  const start=getSessionStart();
+  if(!start)return false;
+  return Date.now()-start<SESSION_DURATION;
+}
+function getSessionTimeRemaining(){
+  const start=getSessionStart();
+  if(!start)return null;
+  const remaining=SESSION_DURATION-(Date.now()-start);
+  return remaining>0?remaining:0;
+}
 
 const DAY_NAMES=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
@@ -396,7 +423,12 @@ async function init(){
       if(cfg.checkin_deadline)S.checkinDeadline=parseInt(cfg.checkin_deadline)||S.checkinDeadline;
     }
     if(!S.pinMilena||!S.pinGuest)initSetup();
-    else initPin();
+    else if(isSessionValid()){
+      // Sessão ainda válida, vai direto para o app
+      await enterAppFromSession();
+    }else{
+      initPin();
+    }
   }catch(e){
     console.error(e);
     toast('⚠️ Erro ao conectar: '+e.message);
@@ -457,15 +489,17 @@ function initPin(){
     pv+=d;uDots('pin-dots',pv);
     if(pv.length===4){
       const h=await hp(pv);
-      if(h===S.pinMilena){role='milena';await enterApp();}
-      else if(h===S.pinGuest){role='guest';await enterApp();}
+      if(h===S.pinMilena){role='milena';setSessionStart();await enterApp();}
+      else if(h===S.pinGuest){role='guest';setSessionStart();await enterApp();}
       else{uDots('pin-dots',pv,true);shake('pin-dots');toast('⚠️ PIN incorreto');setTimeout(()=>{pv='';uDots('pin-dots','');},500);}
     }
   },()=>{pv=pv.slice(0,-1);uDots('pin-dots',pv);});
 }
 
 // ── ENTER APP ─────────────────────────────────────────
-async function enterApp(){
+async function enterAppFromSession(){
+  // Recupera o role da sessão anterior (armazenar após autenticação)
+  role=localStorage.getItem('sessionRole')||'milena';
   showLayer('loading-screen');
   try{
     contacts=await db.getContacts()||[];
@@ -474,11 +508,50 @@ async function enterApp(){
   showLayer('app');
   applyRole();
   goTo(role==='guest'?'meds':'home');
-  startCI();startMedLoop();
+  startCI();startMedLoop();startSessionExpireCheck();
   document.getElementById('msg-template').value=S.msgTemplate;
   renderContacts();renderMeds();
   checkNotifBanner();
 }
+
+async function enterApp(){
+  localStorage.setItem('sessionRole',role); // Salva o role para recuperar se a sessão ainda for válida
+  showLayer('loading-screen');
+  try{
+    contacts=await db.getContacts()||[];
+    meds=await db.getMeds()||[];
+  }catch(e){contacts=[];meds=[];toast('⚠️ Erro ao carregar dados');}
+  showLayer('app');
+  applyRole();
+  goTo(role==='guest'?'meds':'home');
+  startCI();startMedLoop();startSessionExpireCheck();
+  document.getElementById('msg-template').value=S.msgTemplate;
+  renderContacts();renderMeds();
+  checkNotifBanner();
+}
+
+function startSessionExpireCheck(){
+  if(sessionExpireTimer)clearInterval(sessionExpireTimer);
+  // Verifica a cada 1 minuto se a sessão expirou
+  sessionExpireTimer=setInterval(()=>{
+    if(!isSessionValid()){
+      // Sessão expirou! Volta para PIN screen
+      logoutSession();
+    }
+  },60000); // A cada minuto
+}
+
+function logoutSession(){
+  clearSession();
+  clearInterval(ciInterval);
+  clearInterval(medInterval);
+  role=null;
+  contacts=[];
+  meds=[];
+  toast('⏰ Sua sessão expirou. Faça login novamente.');
+  initPin();
+}
+
 
 function applyRole(){
   const g=role==='guest';
