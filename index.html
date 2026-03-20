@@ -706,15 +706,21 @@ function triggerSOS(){
 function cancelSOS(){if(sosTimer){clearInterval(sosTimer);sosTimer=null;}closeModal('modal-sos');toast('Alerta cancelado');}
 function getLocation(){
   return new Promise((resolve)=>{
-    if(!navigator.geolocation){resolve(null);return;}
+    if(!navigator.geolocation){console.warn('Geolocation not supported');resolve(null);return;}
     navigator.geolocation.getCurrentPosition(
       pos=>{
         const lat=pos.coords.latitude.toFixed(6);
         const lng=pos.coords.longitude.toFixed(6);
+        console.log('Location obtained:',lat,lng);
         resolve({lat,lng,url:'https://maps.google.com/?q='+lat+','+lng});
       },
-      err=>{console.warn('Geo error:',err);resolve(null);},
-      {timeout:5000,maximumAge:0}
+      err=>{
+        console.error('Geolocation error:',err.code,err.message);
+        // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+        if(err.code===1)toast('⚠️ Permissão de localização negada');
+        resolve(null);
+      },
+      {timeout:10000,maximumAge:0,enableHighAccuracy:false}
     );
   });
 }
@@ -723,9 +729,14 @@ async function sendWAContact(id){
   toast('📍 Obtendo localização...');
   const loc=await getLocation();
   let msg=S.msgTemplate;
-  if(loc)msg+='\n📍 Localização: '+loc.url;
+  if(loc){
+    msg+='\n📍 Localização: '+loc.url;
+    toast('📍 Localização obtida e enviada!');
+  }else{
+    toast('⚠️ Sem localização (permissão ou indisponível)');
+  }
   window.open('https://wa.me/'+c.phone+'?text='+encodeURIComponent(msg),'_blank');
-  addHistoryDB('sos','🆘 SOS enviado para: '+c.name);
+  addHistoryDB('sos','🆘 SOS enviado para: '+c.name+(loc?' [com localização]':''));
   toast('🆘 Mensagem aberta para '+c.name+'!');
 }
 async function sendWAAll(){
@@ -734,10 +745,15 @@ async function sendWAAll(){
   toast('📍 Obtendo localização...');
   const loc=await getLocation();
   let msg=S.msgTemplate;
-  if(loc)msg+='\n📍 Localização: '+loc.url;
+  if(loc){
+    msg+='\n📍 Localização: '+loc.url;
+    toast('📍 Localização obtida e enviando...');
+  }else{
+    toast('⚠️ Sem localização (permissão ou indisponível)');
+  }
   const encoded=encodeURIComponent(msg);
   contacts.forEach((c,i)=>setTimeout(()=>window.open('https://wa.me/'+c.phone+'?text='+encoded,'_blank'),i*900));
-  addHistoryDB('sos','🆘 SOS disparado para: '+contacts.map(c=>c.name).join(', '));
+  addHistoryDB('sos','🆘 SOS disparado para: '+contacts.map(c=>c.name).join(', ')+(loc?' [com localização]':''));
   toast('🆘 Alertas enviados para '+contacts.length+' contato(s)!');
   S.checkinDeadline=Date.now()+6*3600*1000;
   db.saveSettings({checkin_deadline:S.checkinDeadline}).catch(console.error);
