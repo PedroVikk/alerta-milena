@@ -943,15 +943,8 @@ async function delMed(id,name){
 }
 
 function updateNextDose(){
-  const active=meds.filter(m=>m.active&&!m.taken_today);
-  const wrap=document.getElementById('next-dose-wrap');
-  if(!active.length){wrap.style.display='none';return;}
-  const next=active.reduce((a,b)=>(a.next_dose||0)<(b.next_dose||0)?a:b);
-  const diff=(next.next_dose||0)-Date.now();
-  if(diff<0){wrap.style.display='none';return;}
-  wrap.style.display='block';
-  const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);
-  document.getElementById('next-dose-val').textContent=next.name+' — '+String(h).padStart(2,'0')+'h'+String(m).padStart(2,'0')+'m';
+  // Elemento next-dose-wrap foi removido do HTML
+  // Função mantida para compatibilidade com chamadas anteriores
 }
 
 function startMedLoop(){
