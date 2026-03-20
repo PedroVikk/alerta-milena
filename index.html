@@ -637,9 +637,7 @@ function applyRole(){
   document.getElementById('settings-locked').style.display=g?'block':'none';
   document.getElementById('settings-content').style.display=g?'none':'block';
   document.getElementById('nav-home').style.display=g?'none':'flex';
-  // guests can see meds (read only) but not add
-  if(g&&document.getElementById('add-med-btn-wrap'))
-    document.getElementById('add-med-btn-wrap').style.display='none';
+  // todos podem adicionar remédios agora
   document.getElementById('role-chip-history').innerHTML=g?'<span class="role-chip guest">Convidado</span>':'<span class="role-chip milena">Milena</span>';
 }
 
@@ -845,41 +843,80 @@ async function saveMed(){
 function renderMeds(){
   const l=document.getElementById('med-list');
   if(!meds.length){l.innerHTML='<div class="empty-state">Nenhum remédio cadastrado ainda.</div>';return;}
+  
   const todayIdx=new Date().getDay(); // 0=Dom
-  const todayMeds=meds.filter(m=>{
+  const activeMeds=meds.filter(m=>m.active);
+  const todayMeds=activeMeds.filter(m=>{
     const days=m.days_of_week||'1111111';
     return days[todayIdx]==='1';
   });
-  if(!todayMeds.length){l.innerHTML='<div class="empty-state">Nenhum remédio para hoje 🎉</div>';return;}
-  l.innerHTML=todayMeds.map(m=>{
-    const taken=m.taken_today;
-    const canToggle=role==='milena';
-    return `<div class="med-card ${taken?'taken-done':''}">
-      <div class="med-top">
-        <div class="card-avatar av-blue" style="flex-shrink:0">💊</div>
-        <div class="card-info">
-          <div class="card-name">${m.name}</div>
-          <div class="card-sub">🕐 ${m.time} · a cada ${m.interval_h}h · ${daysLabel(m.days_of_week)}${m.note?' · '+m.note:''}</div>
+  
+  let html='';
+  
+  // Seção: Próximos remédios (de hoje)
+  if(todayMeds.length){
+    html+=`<p class="section-title">🎯 Próximos remédios (hoje)</p>`;
+    html+=todayMeds.sort((a,b)=>a.time.localeCompare(b.time)).map(m=>{
+      const taken=m.taken_today;
+      return `<div class="med-card ${taken?'taken-done':''}">
+        <div class="med-top">
+          <div class="card-avatar av-blue" style="flex-shrink:0">💊</div>
+          <div class="card-info">
+            <div class="card-name">${m.name}</div>
+            <div class="card-sub">🕐 ${m.time}${m.note?' · '+m.note:''}</div>
+          </div>
+          ${role==='milena'?`<button class="card-del" onclick="delMed('${m.id}','${m.name}')">🗑</button>`:''}
         </div>
-        ${role==='milena'?`<button class="card-del" onclick="delMed('${m.id}','${m.name}')">🗑</button>`:''}
-      </div>
-      <div class="med-body" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <div>
-          ${taken
-            ?`<div style="color:#68d391;font-size:.82rem;font-weight:700">✅ Tomado${m.taken_at?' às '+m.taken_at:''}</div>`
-            :`<div style="color:var(--muted);font-size:.82rem">⏳ Ainda não tomado</div>`
-          }
+        <div class="med-body" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div>
+            ${taken
+              ?`<div style="color:#68d391;font-size:.82rem;font-weight:700">✅ Tomado${m.taken_at?' às '+m.taken_at:''}</div>`
+              :`<div style="color:var(--muted);font-size:.82rem">⏳ Ainda não tomado</div>`
+            }
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${role==='milena'
+              ?`<button class="taken-btn ${taken?'yes':'no'}" onclick="toggleTaken('${m.id}')">${taken?'✅ Tomado':'Marcar'}</button>`
+              :`<span style="font-size:.78rem;color:${taken?'#68d391':'var(--muted)'};">${taken?'✅ Tomado':'⏳ Pendente'}</span>`
+            }
+          </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          ${canToggle
-            ?`<button class="taken-btn ${taken?'yes':'no'}" onclick="toggleTaken('${m.id}')">${taken?'✅ Tomado':'Marcar como tomado'}</button>`
-            :`<span style="font-size:.78rem;color:${taken?'#68d391':'var(--muted)'};">${taken?'✅ Tomado':'⏳ Pendente'}</span>`
-          }
-          ${role==='milena'?`<div class="toggle-track ${m.active?'on':''}" onclick="toggleMedActive('${m.id}')"><div class="toggle-thumb"></div></div>`:''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+      </div>`;
+    }).join('');
+  }else{
+    html+=`<div class="empty-state">Nenhum remédio para hoje 🎉</div>`;
+  }
+  
+  // Seção: Remédios por dia da semana
+  if(activeMeds.length > 0){
+    html+=`<p class="section-title" style="margin-top:24px">📅 Remédios da semana</p>`;
+    const daysOfWeek=['🟦 Domingo','🟩 Segunda', '🟦 Terça','🟩 Quarta','🟦 Quinta','🟩 Sexta','🟦 Sábado'];
+    
+    for(let dayIdx=0; dayIdx<7; dayIdx++){
+      const dayMeds=activeMeds.filter(m=>{
+        const days=m.days_of_week||'1111111';
+        return days[dayIdx]==='1';
+      });
+      
+      if(dayMeds.length){
+        const isToday=dayIdx===todayIdx;
+        html+=`<div style="margin-bottom:16px;padding:12px;background:${isToday?'rgba(94,176,200,.1)':'var(--bg))'};border-left:3px solid ${isToday?'var(--accent)':'var(--border2)'};border-radius:4px">
+          <div style="font-weight:700;color:${isToday?'var(--accent)':'var(--text)'};font-size:.9rem;margin-bottom:10px">${daysOfWeek[dayIdx]}${isToday?' ⭐ hoje':''}</div>`;
+        
+        dayMeds.sort((a,b)=>a.time.localeCompare(b.time)).forEach(m=>{
+          html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;font-size:.85rem;border-bottom:1px solid rgba(94,176,200,.1)">
+            <span style="font-weight:700;color:var(--accent);min-width:45px">${m.time}</span>
+            <span style="flex:1;color:var(--text)">${m.name}</span>
+            ${m.note?`<span style="font-size:.75rem;color:var(--muted)">· ${m.note}</span>`:''}
+          </div>`;
+        });
+        
+        html+=`</div>`;
+      }
+    }
+  }
+  
+  l.innerHTML=html;
 }
 
 async function toggleTaken(id){
