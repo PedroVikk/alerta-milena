@@ -577,6 +577,14 @@ async function enterAppFromSession(){
   try{
     contacts=await db.getContacts()||[];
     meds=await db.getMeds()||[];
+    // Reset next_dose para remédios antigos para evitar notificações fantasma
+    const now=Date.now();
+    for(const m of meds){
+      if((m.next_dose||0)<now){
+        m.next_dose=now+m.interval_h*3600*1000;
+        try{await db.updateMed(m.id,{next_dose:m.next_dose});}catch(e){}
+      }
+    }
   }catch(e){contacts=[];meds=[];toast('⚠️ Erro ao carregar dados');}
   showLayer('app');
   applyRole();
@@ -593,6 +601,14 @@ async function enterApp(){
   try{
     contacts=await db.getContacts()||[];
     meds=await db.getMeds()||[];
+    // Reset next_dose para remédios antigos para evitar notificações fantasma
+    const now=Date.now();
+    for(const m of meds){
+      if((m.next_dose||0)<now){
+        m.next_dose=now+m.interval_h*3600*1000;
+        try{await db.updateMed(m.id,{next_dose:m.next_dose});}catch(e){}
+      }
+    }
   }catch(e){contacts=[];meds=[];toast('⚠️ Erro ao carregar dados');}
   showLayer('app');
   applyRole();
@@ -739,7 +755,8 @@ async function sendWAContact(id){
   }else{
     toast('⚠️ Sem localização (permissão ou indisponível)');
   }
-  window.open('https://wa.me/'+c.phone+'?text='+encodeURIComponent(msg),'_blank');
+  const waUrl='https://wa.me/'+c.phone+'?text='+encodeURIComponent(msg);
+  window.location.href=waUrl;
   addHistoryDB('sos','🆘 SOS enviado para: '+c.name+(loc?' [com localização]':''));
   toast('🆘 Mensagem aberta para '+c.name+'!');
 }
@@ -756,7 +773,15 @@ async function sendWAAll(){
     toast('⚠️ Sem localização (permissão ou indisponível)');
   }
   const encoded=encodeURIComponent(msg);
-  contacts.forEach((c,i)=>setTimeout(()=>window.open('https://wa.me/'+c.phone+'?text='+encoded,'_blank'),i*900));
+  // Para mobile: primeiro contato via location.href, resto via window.open com delay
+  contacts.forEach((c,i)=>{
+    const url='https://wa.me/'+c.phone+'?text='+encoded;
+    if(i===0){
+      setTimeout(()=>{window.location.href=url;},200);
+    }else{
+      setTimeout(()=>{window.open(url,'_blank');},i*900);
+    }
+  });
   addHistoryDB('sos','🆘 SOS disparado para: '+contacts.map(c=>c.name).join(', ')+(loc?' [com localização]':''));
   toast('🆘 Alertas enviados para '+contacts.length+' contato(s)!');
   S.checkinDeadline=Date.now()+6*3600*1000;
@@ -971,8 +996,14 @@ function startMedLoop(){
     const nowTs=Date.now();let changed=false;
     for(const m of meds){
       if(!m.active)continue;
-      if(nowTs>=(m.next_dose||0)){
+      // Só dispara notificação se o next_dose está dentro de um intervalo razoável (não mais de 1 minuto no passado)
+      if(nowTs>=(m.next_dose||0) && nowTs-(m.next_dose||0)<60000){
         fireInAppMed(m);
+        m.next_dose=nowTs+m.interval_h*3600*1000;
+        try{await db.updateMed(m.id,{next_dose:m.next_dose});}catch(e){}
+        changed=true;
+      }else if(nowTs>(m.next_dose||0)+60000){
+        // Se passou muito tempo, apenas atualiza next_dose sem disparar notificação
         m.next_dose=nowTs+m.interval_h*3600*1000;
         try{await db.updateMed(m.id,{next_dose:m.next_dose});}catch(e){}
         changed=true;
