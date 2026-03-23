@@ -658,12 +658,16 @@ function toast(msg,col){
 function renderContacts(){
   const l=document.getElementById('contact-list');
   l.innerHTML=contacts.length
-    ?contacts.map(c=>`
+    ?contacts.map(c=>{
+      const cIdEsc=c.id.replace(/'/g,"\\'");
+      const cNameEsc=c.name.replace(/'/g,"\\'");
+      return `
       <div class="card-item">
         <div class="card-avatar av-teal">${c.name[0].toUpperCase()}</div>
         <div class="card-info"><div class="card-name">${c.name}</div><div class="card-sub">+${c.phone}</div></div>
-        <button class="card-del" onclick="delContact('${c.id}','${c.name}')">🗑 Excluir</button>
-      </div>`).join('')
+        <button class="card-del" onclick="delContact('${cIdEsc}','${cNameEsc}')">🗑 Excluir</button>
+      </div>`;
+    }).join('')
     :'<div class="empty-state">Nenhum contato cadastrado.</div>';
   document.getElementById('contacts-badge').textContent=contacts.length+(contacts.length===1?' contato':' contatos');
 }
@@ -690,11 +694,14 @@ async function delContact(id,name){
 function triggerSOS(){
   if(!contacts.length){toast('⚠️ Cadastre ao menos um contato!');goTo('contacts');return;}
   const list=document.getElementById('sos-contact-list');
-  list.innerHTML=contacts.map(c=>`
-    <button onclick="sendWAContact('${c.id}')" style="background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;color:var(--text);font-size:.95rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;text-align:left">
+  list.innerHTML=contacts.map(c=>{
+    const cIdEsc=c.id.replace(/'/g,"\\'");
+    return `
+    <button onclick="sendWAContact('${cIdEsc}')" style="background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;color:var(--text);font-size:.95rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;text-align:left">
       <span style="font-size:1.4rem">📲</span>
       <div><div style="font-weight:700">${c.name}</div><div style="font-size:.75rem;color:var(--muted)">+${c.phone}</div></div>
-    </button>`).join('');
+    </button>`;
+  }).join('');
   list.innerHTML+=`<button onclick="sendWAAll()" style="background:var(--danger);border:none;border-radius:12px;padding:14px;color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;width:100%;margin-top:4px">🆘 Enviar para TODOS</button>`;
   openModal('modal-sos');
   let pct=100;const fill=document.getElementById('countdown-fill');
@@ -854,6 +861,8 @@ function renderMeds(){
     html+=`<p class="section-title">🎯 Próximos remédios (hoje)</p>`;
     html+=todayMeds.sort((a,b)=>a.time.localeCompare(b.time)).map(m=>{
       const taken=m.taken_today;
+      const mIdEsc=m.id.replace(/'/g,"\\'");
+      const mNameEsc=m.name.replace(/'/g,"\\'");
       return `<div class="med-card ${taken?'taken-done':''}">
         <div class="med-top">
           <div class="card-avatar av-blue" style="flex-shrink:0">💊</div>
@@ -861,7 +870,7 @@ function renderMeds(){
             <div class="card-name">${m.name}</div>
             <div class="card-sub">🕐 ${m.time}${m.note?' · '+m.note:''}</div>
           </div>
-          ${role==='milena'?`<button class="card-del" onclick="delMed('${m.id}','${m.name}')">🗑</button>`:''}
+          ${role==='milena'?`<button class="card-del" onclick="delMed('${mIdEsc}','${mNameEsc}')">🗑</button>`:''}
         </div>
         <div class="med-body" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
           <div>
@@ -872,7 +881,7 @@ function renderMeds(){
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             ${role==='milena'
-              ?`<button class="taken-btn ${taken?'yes':'no'}" onclick="toggleTaken('${m.id}')">${taken?'✅ Tomado':'Marcar'}</button>`
+              ?`<button class="taken-btn ${taken?'yes':'no'}" onclick="toggleTaken('${mIdEsc}')">${taken?'✅ Tomado':'Marcar'}</button>`
               :`<span style="font-size:.78rem;color:${taken?'#68d391':'var(--muted)'};">${taken?'✅ Tomado':'⏳ Pendente'}</span>`
             }
           </div>
@@ -900,13 +909,15 @@ function renderMeds(){
           <div style="font-weight:700;color:${isToday?'var(--accent)':'var(--text)'};font-size:.9rem;margin-bottom:10px">${daysOfWeek[dayIdx]}${isToday?' ⭐ hoje':''}</div>`;
         
         dayMeds.sort((a,b)=>a.time.localeCompare(b.time)).forEach(m=>{
+          const mIdEsc=m.id.replace(/'/g,"\\'");
+          const mNameEsc=m.name.replace(/'/g,"\\'");
           html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;font-size:.85rem;border-bottom:1px solid rgba(94,176,200,.1);justify-content:space-between">
             <div style="display:flex;gap:10px;align-items:center;flex:1">
               <span style="font-weight:700;color:var(--accent);min-width:45px">${m.time}</span>
               <span style="color:var(--text)">${m.name}</span>
               ${m.note?`<span style="font-size:.75rem;color:var(--muted)">· ${m.note}</span>`:''}
             </div>
-            ${role==='milena'?`<button class="card-del" onclick="delMed('${m.id}','${m.name}')" style="padding:4px 8px">🗑</button>`:''}
+            ${role==='milena'?`<button class="card-del" onclick="delMed('${mIdEsc}','${mNameEsc}')" style="padding:4px 8px">🗑</button>`:''}
           </div>`;
         });
         
